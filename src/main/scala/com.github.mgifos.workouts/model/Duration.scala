@@ -10,6 +10,7 @@ object DistanceUnits extends Enumeration {
   type DistanceUnit = Value
   val km, mi, m = Value
 }
+
 case class TimeDuration(hours: Int = 0, minutes: Int = 0, seconds: Int = 0) extends Duration
 
 object Duration {

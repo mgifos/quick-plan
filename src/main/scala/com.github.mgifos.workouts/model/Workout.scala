@@ -1,26 +1,37 @@
 package com.github.mgifos.workouts.model
 
-case class Workout(name: String, steps: Seq[Step] = Nil) {
-  def withStep(step: Step): Workout = Workout(name, steps :+ step)
+trait Workout
+
+case class WorkoutDef(name: String, steps: Seq[Step] = Nil) extends Workout {
+  def toRef: WorkoutRef = WorkoutRef(name)
+  def withStep(step: Step): WorkoutDef = WorkoutDef(name, steps :+ step)
 }
+
+case class WorkoutRef(name: String) extends Workout
+
+case class WorkoutNote(note: String) extends Workout
 
 object Workout {
 
-  private val WorkoutName = """^workout:\s([\w-]+)((\n\s*-\s[a-z]+:.*)*)$""".r
+  private val WorkoutName = """^workout:\s([\w \-,;:\.@]+)((\n\s*\-\s[a-z]+:.*)*)$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)((\n\s{1,}-\s.*)*))(([\s].*)*)$""".r
 
-  def parse(x: String) = {
-    def loop(w: Workout, steps: String): Workout = steps match {
+  def parseDef(x: String): Either[String, WorkoutDef] = {
+    def loop(w: WorkoutDef, steps: String): Either[String, WorkoutDef] = steps match {
       case NextStepRx(next, _, _, _, rest, _) =>
         val newWorkout = w.withStep(Step.parse(next.trim))
-        if (rest.trim.isEmpty) newWorkout
+        if (rest.trim.isEmpty) Right(newWorkout)
         else loop(newWorkout, rest.trim)
-      case _ => throw new IllegalArgumentException(s"Input string cannot be parsed to Workout: $steps")
+      case _ => Left(s"Input string cannot be parsed to Workout: $steps")
     }
     x match {
-      case WorkoutName(name, steps, _) =>
-        loop(Workout(name), steps.trim)
-      case _ => throw new IllegalArgumentException(s"Input string cannot be parsed to Workout: $x")
+      case WorkoutName(name, steps, _) => loop(WorkoutDef(name), steps.trim)
+      case _ => Left(s"Input string cannot be parsed to Workout: $x")
     }
+  }
+
+  def parseRef(x: String): WorkoutRef = x match {
+    case WorkoutName(name, _, _) => WorkoutRef(name)
+    case _ => WorkoutRef(x.trim)
   }
 }
