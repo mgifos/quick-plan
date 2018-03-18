@@ -1,15 +1,35 @@
 package com.github.mgifos.workouts.model
 
-trait Workout
+import play.api.libs.json.{ JsValue, Json }
+
+trait Workout {
+  def json: JsValue
+}
 
 case class WorkoutDef(name: String, steps: Seq[Step] = Nil) extends Workout {
   def toRef: WorkoutRef = WorkoutRef(name)
   def withStep(step: Step): WorkoutDef = WorkoutDef(name, steps :+ step)
+  def json: JsValue = Json.obj(
+    "sportType" -> Json.obj(
+      "sportTypeId" -> 1,
+      "sportTypeKey" -> "running"),
+    "workoutName" -> name,
+    "workoutSegments" -> Json.arr(
+      Json.obj(
+        "segmentOrder" -> 1,
+        "sportType" -> Json.obj(
+          "sportTypeId" -> 1,
+          "sportTypeKey" -> "running"),
+        "workoutSteps" -> steps.zipWithIndex.map { case (s, i) => s.json(i + 1) })))
 }
 
-case class WorkoutRef(name: String) extends Workout
+case class WorkoutRef(name: String) extends Workout {
+  def json: JsValue = Json.obj()
+}
 
-case class WorkoutNote(note: String) extends Workout
+case class WorkoutNote(note: String) extends Workout {
+  def json: JsValue = Json.obj()
+}
 
 object Workout {
 
