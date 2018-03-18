@@ -1,0 +1,138 @@
+{
+  "sportType": {
+    "sportTypeId": 1,
+    "sportTypeKey": "running"
+  },
+  "workoutName": "run-fast",
+  "workoutSegments": [
+    {
+      "segmentOrder": 1,
+      "sportType": {
+        "sportTypeId": 1,
+        "sportTypeKey": "running"
+      },
+      "workoutSteps": [
+        {
+          "type": "ExecutableStepDTO",
+          "stepId": null,
+          "stepOrder": 1,
+          "childStepId": null,
+          "description": null,
+          "stepType": {
+            "stepTypeId": 1,
+            "stepTypeKey": "warmup"
+          },
+          "endCondition": {
+            "conditionTypeKey": "time",
+            "conditionTypeId": 2
+          },
+          "preferredEndConditionUnit": null,
+          "endConditionValue": 600,
+          "endConditionCompare": null,
+          "endConditionZone": null,
+          "targetType": {
+            "workoutTargetTypeId": 1,
+            "workoutTargetTypeKey": "no.target"
+          },
+          "targetValueOne": null,
+          "targetValueTwo": null,
+          "zoneNumber": null
+        },
+        {
+          "stepId": null,
+          "stepOrder": 2,
+          "stepType": {
+            "stepTypeId": 6,
+            "stepTypeKey": "repeat"
+          },
+          "numberOfIterations": 2,
+          "smartRepeat": false,
+          "childStepId": 1,
+          "workoutSteps": [
+            {
+              "type": "ExecutableStepDTO",
+              "stepId": null,
+              "stepOrder": 1,
+              "childStepId": null,
+              "description": null,
+              "stepType": {
+                "stepTypeId": 3,
+                "stepTypeKey": "interval"
+              },
+              "endCondition": {
+                "conditionTypeKey": "distance",
+                "conditionTypeId": 3
+              },
+              "preferredEndConditionUnit": {
+                "unitKey": "meter"
+              },
+              "endConditionValue": 1500,
+              "endConditionCompare": null,
+              "endConditionZone": null,
+              "targetType": {
+                "workoutTargetTypeId": 6,
+                "workoutTargetTypeKey": "pace.zone"
+              },
+              "targetValueOne": 3.7037037037037037,
+              "targetValueTwo": 3.3333333333333335,
+              "zoneNumber": null
+            },
+            {
+              "type": "ExecutableStepDTO",
+              "stepId": null,
+              "stepOrder": 2,
+              "childStepId": null,
+              "description": null,
+              "stepType": {
+                "stepTypeId": 4,
+                "stepTypeKey": "recovery"
+              },
+              "endCondition": {
+                "conditionTypeKey": "time",
+                "conditionTypeId": 2
+              },
+              "preferredEndConditionUnit": null,
+              "endConditionValue": 90,
+              "endConditionCompare": null,
+              "endConditionZone": null,
+              "targetType": {
+                "workoutTargetTypeId": 4,
+                "workoutTargetTypeKey": "heart.rate.zone"
+              },
+              "targetValueOne": "",
+              "targetValueTwo": "",
+              "zoneNumber": "2"
+            }
+          ],
+          "type": "RepeatGroupDTO"
+        },
+        {
+          "type": "ExecutableStepDTO",
+          "stepId": null,
+          "stepOrder": 3,
+          "childStepId": null,
+          "description": null,
+          "stepType": {
+            "stepTypeId": 2,
+            "stepTypeKey": "cooldown"
+          },
+          "endCondition": {
+            "conditionTypeKey": "lap.button",
+            "conditionTypeId": 1
+          },
+          "preferredEndConditionUnit": null,
+          "endConditionValue": null,
+          "endConditionCompare": null,
+          "endConditionZone": null,
+          "targetType": {
+            "workoutTargetTypeId": 1,
+            "workoutTargetTypeKey": "no.target"
+          },
+          "targetValueOne": null,
+          "targetValueTwo": null,
+          "zoneNumber": null
+        }
+      ]
+    }
+  ]
+}
