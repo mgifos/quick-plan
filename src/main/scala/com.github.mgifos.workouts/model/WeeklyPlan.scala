@@ -34,11 +34,12 @@ class WeeklyPlan(csv: Array[Byte]) {
   def workouts: Seq[WorkoutDef] = onlyDefs(processed)
 
   /**
-   * @return optional workout refs & notes of this plan per day
+   * @return optional workout refs (defs included as refs)
    */
-  def get: Seq[Option[Workout]] = processed.map {
+  def get: Seq[Option[WorkoutRef]] = processed.map {
     case Some(x: WorkoutDef) => Some(x.toRef)
-    case x => x
+    case Some(x: WorkoutRef) => Some(x)
+    case _ => None
   }
 
   private def isAValidWeek(w: Seq[String]) = w.headOption.exists(no => no.trim.nonEmpty && no.forall(_.isDigit))
