@@ -113,9 +113,9 @@ object Main extends App {
       garminWorkouts <- garmin.createWorkouts(workouts)
       maybeScheduleMessage <- scheduleTask(garminWorkouts)
     } yield {
-      log.info("\n Statistics:")
+      log.info("\nStatistics:")
       maybeDeleteMessage.foreach(msg => log.info("  " + msg))
-      log.info(s"  ${garminWorkouts.length} workouts has been imported to Garmin Connect")
+      log.info(s"  ${garminWorkouts.length} imported")
       maybeScheduleMessage.foreach(msg => log.info("  " + msg))
     }
   }
@@ -125,7 +125,7 @@ object Main extends App {
    */
   private def deleteWorkoutsTask(workouts: Seq[String])(implicit config: Config, garmin: GarminConnect): Future[Option[String]] = {
     if (config.delete)
-      garmin.deleteWorkouts(workouts).map(c => Some(s"$c workouts is deleted"))
+      garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
     else
       Future.successful(None)
   }
@@ -143,7 +143,7 @@ object Main extends App {
       val spec = plan.get.zipWithIndex.collect {
         case (Some(ref), day) if !start.plusDays(day).isBefore(LocalDate.now()) => start.plusDays(day) -> woMap(ref.name)
       }.to[Seq]
-      garmin.schedule(spec).map(c => Some(s"$c workouts is scheduled"))
+      garmin.schedule(spec).map(c => Some(s"$c scheduled"))
     } else
       Future.successful(None)
   }

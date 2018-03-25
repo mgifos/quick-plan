@@ -68,7 +68,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
             if res.status == OK
             json <- res.entity.toStrict(10.seconds).map(_.data.utf8String)
           } yield {
-            log.info(s"  '$workout'")
+            log.info(s"  $workout")
             GarminWorkout(workout, Json.parse(json).\("workoutId").as[Long])
           }
       }
@@ -97,7 +97,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       log.info("\nDeleting workouts:")
       pairs.map {
         case (workout, id) =>
-          val label = s"'$workout' -> $id"
+          val label = s"$workout -> $id"
           label -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/workout/$id")
             .withHeaders(session.headers
               :+ Referer("https://connect.garmin.com/modern/workouts")
@@ -126,7 +126,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       Source(spec).map {
         case (date, gw) =>
           log.debug(s"Making $date -> $gw")
-          s"$date -> '${gw.name}'" -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/schedule/${gw.id}")
+          s"$date -> ${gw.name}" -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/schedule/${gw.id}")
             .withHeaders(session.headers
               :+ Referer("https://connect.garmin.com/modern/calendar")
               :+ RawHeader("NK", "NT"))
