@@ -12,9 +12,10 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.pattern.ask
-import akka.stream.{ Materializer, ThrottleMode }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.{ Materializer, ThrottleMode }
 import akka.util.Timeout
+import com.github.mgifos.workouts.GarminConnect._
 import com.github.mgifos.workouts.model.WorkoutDef
 import com.typesafe.scalalogging.Logger
 import play.api.libs.json.{ JsObject, Json }
@@ -22,6 +23,7 @@ import play.api.libs.json.{ JsObject, Json }
 import scala.collection.immutable.{ Map, Seq }
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.language.implicitConversions
 import scala.util.Failure
 
 case class GarminWorkout(name: String, id: Long)
@@ -49,7 +51,6 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
           .withHeaders(session.headers
             :+ Referer("https://connect.garmin.com/modern/workout/create/running")
             :+ RawHeader("NK", "NT"))
-        log.debug(s"Sending req: ${req.httpMessage}")
         workout.name -> req
       })
     }
@@ -58,18 +59,16 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       .throttle(1, 1.second, 1, ThrottleMode.shaping)
       .mapAsync(1) {
         case (workout, req) =>
-          for {
-            res <- Http().singleRequest(req).andThen {
-              case util.Success(ok) =>
-                log.debug(s"response is ok: $ok")
-              case Failure(ex) =>
-                log.error("Ups", ex)
+          Http().singleRequest(req).flatMap { res =>
+            if (res.status == OK) {
+              res.body.map { json =>
+                log.info(s"  $workout")
+                GarminWorkout(workout, Json.parse(json).\("workoutId").as[Long])
+              }
+            } else {
+              log.debug(s"Creation wo response: $res")
+              Future.failed(new Error("Cannot create workout"))
             }
-            if res.status == OK
-            json <- res.entity.toStrict(10.seconds).map(_.data.utf8String)
-          } yield {
-            log.info(s"  $workout")
-            GarminWorkout(workout, Json.parse(json).\("workoutId").as[Long])
           }
       }
 
@@ -88,11 +87,9 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
     val futureRequests = for {
       session <- login()
       map <- getWorkoutsMap()
-      _ = log.debug(s"MAP: $map")
       pairs = workouts.flatMap { wo =>
         map.filter { case (name, _) => name == wo }
       }
-      _ = log.debug(s"PAIRS: $pairs")
     } yield {
       log.info("\nDeleting workouts:")
       pairs.map {
@@ -109,11 +106,12 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       .throttle(1, 1.second, 1, ThrottleMode.shaping)
       .mapAsync(1) {
         case (label, req) =>
-          log.debug(s"  Delete request: $req")
-          Http().singleRequest(req).map { res =>
-            res.discardEntityBytes()
+          Http().singleRequest(req).withoutBody.map { res =>
             if (res.status == NoContent) log.info(s"  $label")
-            else log.error(s"  Cannot delete workout: $label")
+            else {
+              log.error(s"  Cannot delete workout: $label")
+              log.debug(s"  Response: $res")
+            }
           }
       }
     source.runWith(Sink.seq).map(_.length)
@@ -125,7 +123,6 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       log.info("\nScheduling:")
       Source(spec).map {
         case (date, gw) =>
-          log.debug(s"Making $date -> $gw")
           s"$date -> ${gw.name}" -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/schedule/${gw.id}")
             .withHeaders(session.headers
               :+ Referer("https://connect.garmin.com/modern/calendar")
@@ -134,12 +131,10 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       }.throttle(1, 1.second, 1, ThrottleMode.shaping)
         .mapAsync(1) {
           case (label, req) =>
-            log.debug(s"  Sending $req")
-            Http().singleRequest(req).map { res =>
+            Http().singleRequest(req).withoutBody.map { res =>
               log.debug(s"  Received $res")
               if (res.status == OK) log.info(s"  $label")
               else log.error(s"  Cannot schedule: $label")
-              res.discardEntityBytes()
             }
         }
     }.runWith(Sink.seq).map(_.length)
@@ -156,13 +151,18 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
           :+ Referer("https://connect.garmin.com/modern/workouts")
           :+ RawHeader("NK", "NT"))
       Source.fromFuture(
-        for {
-          res <- Http().singleRequest(req)
-          if res.status == OK
-          json <- res.entity.toStrict(2.seconds).map(_.data.utf8String)
-        } yield Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
-          arr.map(x => (x \ "workoutName").as[String] -> (x \ "workoutId").as[Long])
-        }.getOrElse(Seq.empty))
+        Http().singleRequest(req).flatMap { res =>
+          if (res.status == OK)
+            res.body.map { json =>
+              Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
+                arr.map(x => (x \ "workoutName").as[String] -> (x \ "workoutId").as[Long])
+              }.getOrElse(Seq.empty)
+            }
+          else {
+            log.debug(s"Cannot retrieve workout list, response: $res")
+            Future.failed(new Error("Cannot retrieve workout list from Garmin Connect"))
+          }
+        })
     }
     source.runWith(Sink.head)
   }
@@ -208,8 +208,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       def redirectionLoop(count: Int, url: String, acc: Seq[Cookie]): Future[Seq[Cookie]] = {
         Http().singleRequest {
           HttpRequest(uri = Uri(url)).withHeaders(acc)
-        }.flatMap { res =>
-          res.discardEntityBytes()
+        }.withoutBody.flatMap { res =>
           val cookies = extractCookies(res)
           res.headers.find(_.name() == "Location") match {
             case Some(header) =>
@@ -232,7 +231,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
         "gauthHost" -> "https://sso.garmin.com/sso",
         "consumeServiceTicket" -> "false")
       for {
-        res1 <- Http().singleRequest(HttpRequest(uri = Uri("https://sso.garmin.com/sso/login").withQuery(Query(params))))
+        res1 <- Http().singleRequest(HttpRequest(uri = Uri("https://sso.garmin.com/sso/login").withQuery(Query(params)))).withoutBody
         res2 <- Http().singleRequest(
           HttpRequest(
             POST,
@@ -241,24 +240,36 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
               "username" -> email,
               "password" -> password,
               "_eventId" -> "submit",
-              "embed" -> "true")).toEntity).withHeaders(extractCookies(res1)))
+              "embed" -> "true")).toEntity).withHeaders(extractCookies(res1))).withoutBody
         sessionCookies <- redirectionLoop(0, "https://connect.garmin.com/post-auth/login", extractCookies(res2))
         username <- getUsername(sessionCookies)
-      } yield {
-        res1.discardEntityBytes()
-        res2.discardEntityBytes()
-        Session(username, sessionCookies)
-      }
+      } yield Session(username, sessionCookies)
     }
 
     private def getUsername(sessionCookies: Seq[HttpHeader]): Future[String] = {
       val req = HttpRequest(GET, Uri("https://connect.garmin.com/user/username")).withHeaders(sessionCookies)
       Http().singleRequest(req).flatMap { res =>
         if (res.status != StatusCodes.OK) throw new Error("Login failed!")
-        res.entity.toStrict(2.seconds).map(_.data.utf8String).map { json =>
+        res.body.map { json =>
           (Json.parse(json) \ "username").as[String]
         }
       }
     }
   }
+}
+
+object GarminConnect {
+
+  class HttpResponseWithBody(original: HttpResponse) {
+    def body(implicit ec: ExecutionContext, mat: Materializer): Future[String] = original.entity.toStrict(10.seconds).map(_.data.utf8String)
+  }
+
+  class LiteHttpFuture(original: Future[HttpResponse]) {
+    def withoutBody(implicit ec: ExecutionContext, mat: Materializer) = original.andThen {
+      case util.Success(res) => res.discardEntityBytes()
+    }
+  }
+
+  implicit def responseWithBody(original: HttpResponse): HttpResponseWithBody = new HttpResponseWithBody(original)
+  implicit def liteHttpFuture(original: Future[HttpResponse]): LiteHttpFuture = new LiteHttpFuture(original)
 }

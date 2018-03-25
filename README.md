@@ -79,14 +79,14 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, repea
 
 **`<time-duration>`** := `<minutes>:<seconds>`
 
-**`<target`>** := `<zone-target> | <pace-target>`
+**`<target>`** := `<zone-target> | <pace-target>`
 
-**`<zone-target`>** := `z[1-6]`
+**`<zone-target>`** := `z[1-6]`
 
-**`<pace-target`>** := `<pace> - <pace>`
+**`<pace-target>`** := `<pace> - <pace>`
 
-**`<pace`>** := `<minutes>:<seconds>`
+**`<pace>`** := `<minutes>:<seconds>`
 
-**`<minutes`>** := `\d{1,2}`
+**`<minutes>`** := `\d{1,2}`
 
-**`<seconds`>** := `\d{2}`
+**`<seconds>`** := `\d{2}`

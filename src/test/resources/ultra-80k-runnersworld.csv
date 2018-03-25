@@ -24,7 +24,7 @@ WEEK,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday,Estimated km,,Dura
   - recover: 1.4km @z2
 - run: 4km @z2
 - cooldown: lap-button",8k jog,"11-15k, middle 5k @MP",,"workout: 2h run
-- run 120:00
+- run: 120:00
 - cooldown: lap-button","workout: 3.5h run
 - run: 210:00
 - cooldown: lap-button",90.0,,0:30:00,5.0,3.1
