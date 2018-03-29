@@ -1,6 +1,12 @@
-name := "workouts"
+name := "quick-plan"
 
 version := "0.1"
+
+lazy val root = (project in file(".")).enablePlugins(
+  JavaAppPackaging,
+  UniversalDeployPlugin)
+
+mainClass in Compile := Some("com.github.mgifos.workouts.Main")
 
 scalaVersion := "2.12.4"
 

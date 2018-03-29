@@ -26,6 +26,13 @@ An example of 2-weeks training plan, containing 2 workout definitions, 4 referen
 | 2    | run-fast| ``workout: long-15`` <br> ``- run: 15 km @ z2``|rest|run-fast|rest|rest|long-15|
 
 Checkout a [complete training plan for 80K ultra](https://docs.google.com/spreadsheets/d/1b1ZzrAFrjd-kvPq11zlbE2bWn2IQmUy0lBqIOFjqbwk/edit?usp=sharing). It was originally published in an article of Runner's world website - here's [the link](https://www.runnersworld.com/ultrarunning/the-ultimate-ultramarathon-training-plan).
+
+## Installation
+
+- Go to the [releases page](https://github.com/mgifos/quick-plan/releases) of this project
+- Download latest release zip file and unzip it somewhere on your computer
+- Enter bin folder and run `quick-plan` command (use `quick-plan.bat` if you are a Windows user)
+
 ## Command line options
 
 ```
@@ -37,7 +44,7 @@ Usage: quick-plan [import|schedule] [options] <file>
 
   -e, --email <value>      E-mail to login to Garmin Connect
   -p, --password <value>   Password to login to Garmin Connect
-  -d, --delete             Delete all existing workouts with same names as the ones that are going to be imported.
+  -x, --delete             Delete all existing workouts with same names as the ones that are going to be imported.
   --help                   prints this usage text
 
   <file>                   File with a weekly based plan in CSV format
@@ -55,13 +62,13 @@ EXAMPLES
 
 Schedules ultra 80k plan targeting 28-4-2018 for a race day
 
-quick-plan schedule -n 2018-04-29 -d -e your-mail-address@example.com ultra-80k-runnersworld.csv
+quick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv
 ```
 
 ## Workout notation
 The reserved keywords of the notation are: workout, warmup, cooldown, run, repeat, recover and lap-button.
 
-**`workout`** := `<header> <step>+`
+**`<workout>`** := `<header> <step>+`
 
 **`<header>`** := `workout: <name>`
 

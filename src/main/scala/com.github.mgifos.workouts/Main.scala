@@ -59,7 +59,7 @@ object Main extends App {
 
     opt[String]('p', "password").action((x, c) => c.copy(password = x)).text("Password to login to Garmin Connect")
 
-    opt[Unit]('d', "delete").action((_, c) => c.copy(delete = true)).text("Delete all existing workouts with same names as the ones that are going to be imported.")
+    opt[Unit]('x', "delete").action((_, c) => c.copy(delete = true)).text("Delete all existing workouts with same names as the ones that are going to be imported.")
 
     help("help").text("prints this usage text")
 
@@ -73,6 +73,8 @@ object Main extends App {
       action((_, c) => c.copy(mode = Modes.`import`)).text(
         "Imports all workout definitions from CSV file. If it's omitted, it is will be on by default.")
 
+    note("")
+
     cmd("schedule").action((_, c) => c.copy(mode = Modes.schedule)).text(
       "Schedules your weekly plan defined in CSV in Garmin Connect calendar, starting from the first day of first week or" +
         " ending on the last day of the last week. Either start or end date must be entered so the scheduling can be done" +
@@ -82,8 +84,14 @@ object Main extends App {
         opt[String]('s', "start").action((x, c) => c.copy(start = LocalDate.parse(x))).text("Date of the first day of the first week of the plan"),
         opt[String]('n', "end").action((x, c) => c.copy(end = LocalDate.parse(x))).text("Date of the last day of the last week of the plan\n"),
         checkConfig(c =>
-          if (c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN)) failure("Either start or end date must be entered!")
+          if (c.mode == Modes.schedule && c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN))
+            failure("Either start or end date must be entered!")
           else success))
+
+    note("EXAMPLES").text("EXAMPLES\n\nSchedules ultra 80k plan targeting 28-4-2018 for a race day (also deletes existing workouts with the same names)" +
+      "\n\nquick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv")
+
+    note("")
 
     override def showUsageOnError = true
   }

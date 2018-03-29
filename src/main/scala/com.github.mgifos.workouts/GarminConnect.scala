@@ -45,6 +45,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
   def createWorkouts(workouts: Seq[WorkoutDef]): Future[Seq[GarminWorkout]] = {
 
     val source = Source.fromFuture(login()).flatMapConcat { session =>
+      log.info("\nCreating workouts:")
       Source(workouts.map { workout =>
         val req = Post("https://connect.garmin.com/modern/proxy/workout-service/workout")
           .withEntity(HttpEntity(`application/json`, workout.json.toString()))
@@ -72,7 +73,6 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
           }
       }
 
-    log.info("\nCreating workouts:")
     source.via(flow).runWith(Sink.seq)
   }
 
@@ -87,31 +87,29 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
     val futureRequests = for {
       session <- login()
       map <- getWorkoutsMap()
-      pairs = workouts.flatMap { wo =>
-        map.filter { case (name, _) => name == wo }
-      }
     } yield {
       log.info("\nDeleting workouts:")
-      pairs.map {
-        case (workout, id) =>
-          val label = s"$workout -> $id"
-          label -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/workout/$id")
-            .withHeaders(session.headers
-              :+ Referer("https://connect.garmin.com/modern/workouts")
-              :+ RawHeader("NK", "NT")
-              :+ RawHeader("X-HTTP-Method-Override", "DELETE"))
+      for {
+        workout <- workouts
+        ids = map.getOrElse(workout, Seq.empty)
+        if ids.nonEmpty
+      } yield {
+        val label = s"$workout -> ${ids.mkString("[", ", ", "]")}"
+        label -> ids.map(id => Post(s"https://connect.garmin.com/modern/proxy/workout-service/workout/$id")
+          .withHeaders(session.headers
+            :+ Referer("https://connect.garmin.com/modern/workouts")
+            :+ RawHeader("NK", "NT")
+            :+ RawHeader("X-HTTP-Method-Override", "DELETE")))
       }
     }
     val source = Source.fromFuture(futureRequests).flatMapConcat(Source(_))
       .throttle(1, 1.second, 1, ThrottleMode.shaping)
       .mapAsync(1) {
-        case (label, req) =>
-          Http().singleRequest(req).withoutBody.map { res =>
-            if (res.status == NoContent) log.info(s"  $label")
-            else {
-              log.error(s"  Cannot delete workout: $label")
-              log.debug(s"  Response: $res")
-            }
+        case (label, reqs) =>
+          val statusesFut = Future.sequence(reqs.map(req => Http().singleRequest(req).withoutBody))
+          statusesFut.map { statuses =>
+            if (statuses.forall(_.status == NoContent)) log.info(s"  $label")
+            else log.error(s"  Cannot delete workout: $label")
           }
       }
     source.runWith(Sink.seq).map(_.length)
@@ -141,10 +139,10 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
   }
 
   /**
-   * Retrieves workout mapping: name -> id @ GarminConnect
+   * Retrieves workout mapping: name -> Seq[id] @ GarminConnect
    * @return
    */
-  private def getWorkoutsMap(): Future[Seq[(String, Long)]] = {
+  private def getWorkoutsMap(): Future[Map[String, Seq[Long]]] = {
     val source = Source.fromFuture(login()).flatMapConcat { session =>
       val req = Get("https://connect.garmin.com/modern/proxy/workout-service/workouts?start=1&limit=9999&myWorkoutsOnly=true&sharedWorkoutsOnly=false")
         .withHeaders(session.headers
@@ -154,9 +152,14 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
         Http().singleRequest(req).flatMap { res =>
           if (res.status == OK)
             res.body.map { json =>
-              Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
+              val x = Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
                 arr.map(x => (x \ "workoutName").as[String] -> (x \ "workoutId").as[Long])
               }.getOrElse(Seq.empty)
+              x.groupBy {
+                case (name, _) => name
+              }.map {
+                case (a, b) => a -> b.map(_._2)
+              }
             }
           else {
             log.debug(s"Cannot retrieve workout list, response: $res")
