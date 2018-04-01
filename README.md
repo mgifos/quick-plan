@@ -29,6 +29,7 @@ Checkout a [complete training plan for 80K ultra](https://docs.google.com/spread
 
 ## Installation
 
+- Java 8 is a prerequisite, make sure you have it installed
 - Go to the [releases page](https://github.com/mgifos/quick-plan/releases) of this project
 - Download latest release zip file and unzip it somewhere on your computer
 - Enter bin folder and run `quick-plan` command (use `quick-plan.bat` if you are a Windows user)
@@ -68,17 +69,17 @@ quick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-
 ## Workout notation
 The reserved keywords of the notation are: workout, warmup, cooldown, run, repeat, recover and lap-button.
 
-**`<workout>`** := `<header> <step>+`
+**`<workout>`** := `<header><step>+`
 
 **`<header>`** := `workout: <name>`
 
-**`<step>`** := `<newline> - <step-def>*`
+**`<step>`** := `<newline>- <step-def>`
 
-**`<step-def>`** := `<simple-step> | <repetition-step> `
+**`<step-def>`** := `<simple-step> | <repetition-step>`
 
-**`<repetition-step>`** := `repeat: <count> <step>+`
+**`<simple-step>`** := `(warmup | cooldown | run | recover): <duration> [@ <target>]`
 
-**`<simple-step>`** := `- (warmup | cooldown | run | recover): <duration> [@ <target>]`
+**`<repetition-step>`** := `repeat: <count>(<newline>  - <simple-step>)+`
 
 **`<duration>`** := `<distance-duration> | <time-duration> | lap-button`
 

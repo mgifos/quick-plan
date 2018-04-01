@@ -152,14 +152,11 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
         Http().singleRequest(req).flatMap { res =>
           if (res.status == OK)
             res.body.map { json =>
-              val x = Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
+              Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
                 arr.map(x => (x \ "workoutName").as[String] -> (x \ "workoutId").as[Long])
               }.getOrElse(Seq.empty)
-              x.groupBy {
-                case (name, _) => name
-              }.map {
-                case (a, b) => a -> b.map(_._2)
-              }
+                .groupBy { case (name, _) => name }
+                .map { case (a, b) => a -> b.map(_._2) }
             }
           else {
             log.debug(s"Cannot retrieve workout list, response: $res")
