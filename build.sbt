@@ -1,6 +1,6 @@
-name := "quick-plan"
+import ReleaseTransformations._
 
-version := "0.1"
+name := "quick-plan"
 
 lazy val root = (project in file(".")).enablePlugins(
   JavaAppPackaging,
@@ -19,4 +19,17 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-json" % "2.6.9",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+)
+
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runClean,
+  runTest,
+  setReleaseVersion,
+  commitReleaseVersion,
+  tagRelease,
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
 )
