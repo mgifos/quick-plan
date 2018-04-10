@@ -30,7 +30,7 @@ case class GarminWorkout(name: String, id: Long)
 
 class GarminConnect(email: String, password: String)(implicit system: ActorSystem, executionContext: ExecutionContext, mat: Materializer) {
 
-  case class Session(username: String, headers: Seq[HttpHeader])
+  case class Session(headers: Seq[HttpHeader])
 
   case class Login(forceNewSession: Boolean)
 
@@ -206,9 +206,10 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       def extractCookies(res: HttpResponse) = res.headers.collect { case x: `Set-Cookie` => x.cookie }.map(c => Cookie(c.name, c.value))
 
       def redirectionLoop(count: Int, url: String, acc: Seq[Cookie]): Future[Seq[Cookie]] = {
-        Http().singleRequest {
-          HttpRequest(uri = Uri(url)).withHeaders(acc)
-        }.withoutBody.flatMap { res =>
+        val req = HttpRequest(uri = Uri(url)).withHeaders(acc)
+        log.debug(s"Login redirection no $count with req: $req")
+        Http().singleRequest(req).withoutBody.flatMap { res =>
+          log.debug(s"Res: $res")
           val cookies = extractCookies(res)
           res.headers.find(_.name() == "Location") match {
             case Some(header) =>
@@ -226,10 +227,33 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
       }
 
       val params = Map(
-        "service" -> "https://connect.garmin.com/post-auth/login",
         "clientId" -> "GarminConnect",
+        //"connectLegalTerms" -> "true",
+        "consumeServiceTicket" -> "false",
+        //"createAccountShown" -> "true",
+        //"cssUrl" -> "https://static.garmincdn.com/com.garmin.connect/ui/css/gauth-custom-v1.2-min.css",
+        //"displayNameShown" -> "false",
+        //"embedWidget" -> "false",
         "gauthHost" -> "https://sso.garmin.com/sso",
-        "consumeServiceTicket" -> "false")
+        //"generateExtraServiceTicket" -> "false",
+        //"generateNoServiceTicket" -> "false",
+        //"globalOptInChecked" -> "false",
+        //"globalOptInShown" -> "true",
+        //"id" -> "gauth-widget",
+        //"initialFocus" -> "true",
+        //"locale" -> "en_US",
+        //"locationPromptShown" -> "true",
+        //"mobile" -> "false",
+        //"openCreateAccount" -> "false",
+        //"privacyStatementUrl" -> "//connect.garmin.com/en-US/privacy/",
+        //"redirectAfterAccountCreationUrl" -> "https://connect.garmin.com/modern/",
+        //"redirectAfterAccountLoginUrl" -> "https://connect.garmin.com/modern/",
+        //"rememberMeChecked" -> "false",
+        //"rememberMeShown" -> "true",
+        "service" -> "https://connect.garmin.com/modern",
+        //"source" -> "https://connect.garmin.com/en-US/signin",
+        //"webhost" -> "https://connect.garmin.com"
+      )
       for {
         res1 <- Http().singleRequest(HttpRequest(uri = Uri("https://sso.garmin.com/sso/login").withQuery(Query(params)))).withoutBody
         res2 <- Http().singleRequest(
@@ -239,21 +263,9 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
             entity = FormData(Map(
               "username" -> email,
               "password" -> password,
-              "_eventId" -> "submit",
-              "embed" -> "true")).toEntity).withHeaders(extractCookies(res1))).withoutBody
-        sessionCookies <- redirectionLoop(0, "https://connect.garmin.com/post-auth/login", extractCookies(res2))
-        username <- getUsername(sessionCookies)
-      } yield Session(username, sessionCookies)
-    }
-
-    private def getUsername(sessionCookies: Seq[HttpHeader]): Future[String] = {
-      val req = HttpRequest(GET, Uri("https://connect.garmin.com/user/username")).withHeaders(sessionCookies)
-      Http().singleRequest(req).flatMap { res =>
-        if (res.status != StatusCodes.OK) throw new Error("Login failed!")
-        res.body.map { json =>
-          (Json.parse(json) \ "username").as[String]
-        }
-      }
+              "embed" -> "false")).toEntity).withHeaders(extractCookies(res1))).withoutBody
+        sessionCookies <- redirectionLoop(0, "https://connect.garmin.com/modern", extractCookies(res2))
+      } yield Session(sessionCookies)
     }
   }
 }
