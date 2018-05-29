@@ -32,7 +32,7 @@ Checkout a [complete training plan for 80K ultra](https://docs.google.com/spread
 - Java 8 is a prerequisite, make sure you have it installed
 - Go to the [releases page](https://github.com/mgifos/quick-plan/releases) of this project
 - Download latest release zip file and unzip it somewhere on your computer
-- Enter bin folder and run `quick-plan` command (use `quick-plan.bat` if you are a Windows user)
+- Enter bin folder and run `quick-plan` command (use `quick-plan.bat` if you are a Windows user or mark quick-plan script as executable on Linux or Mac systems)
 
 ## Command line options
 
@@ -72,6 +72,8 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, repea
 **`<workout>`** := `<header><step>+`
 
 **`<header>`** := `workout: <name>`
+
+**`<name>`** := `[\u0020-\u007F]+` (printable ascii characters)
 
 **`<step>`** := `<newline>- <step-def>`
 
