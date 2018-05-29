@@ -34,6 +34,18 @@ class WorkoutSpec extends FlatSpec with Matchers {
           CooldownStep(LapButtonPressed)))))
   }
 
+  "Workout" should "parse various printable workout-names correctly" in {
+
+    val testNames = Seq("abcz", "123 xyw", """abc!/+-@,?*;:_!\"#$%&/()=?*""")
+
+    testNames.foreach { testName =>
+      val x = Workout.parseDef(testWO.replace("run-fast", testName))
+      println(x)
+      x.right.get.name should be(testName)
+    }
+  }
+
+
   "Workout" should "dump json correctly" in {
     val is = getClass.getClassLoader.getResourceAsStream("run-fast.json")
     val expectJson = Json.parse(is)

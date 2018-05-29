@@ -33,7 +33,7 @@ case class WorkoutNote(note: String) extends Workout {
 
 object Workout {
 
-  private val WorkoutName = """^workout:\s([\w \-,;:\.@]+)((\n\s*\-\s[a-z]+:.*)*)$""".r
+  private val WorkoutName = """^workout:\s([\u0020-\u007F]+)((\n\s*\-\s[a-z]+:.*)*)$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)((\n\s{1,}-\s.*)*))(([\s].*)*)$""".r
 
   def parseDef(x: String): Either[String, WorkoutDef] = {
