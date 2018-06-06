@@ -17,6 +17,21 @@ class WorkoutSpec extends FlatSpec with Matchers {
   val testWO = "workout: run-fast\n- warmup: 10:00\n- repeat: 2\n  - run: 1500m @ 4:30-5:00\n  - recover: 01:30 @ z2\n- cooldown: lap-button"
 
   /*
+  workout: IV
+  - warmup: 2km @z2
+  - repeat: 3
+    - run: 100m
+    - recover: 1:00
+  - cooldown: lap-button
+  - repeat: 7
+    - run: 1km @z5
+    - recover: 400m
+  - cooldown: 2km @z2
+  - cooldown: lap-button
+  */
+  val testWorkoutIv = "workout: IV\n- warmup: 2km @z2\n- repeat: 3\n  - run: 100m\n  - recover: 1:00\n- cooldown: lap-button\n- repeat: 7\n  - run: 1km @z5\n  - recover: 400m\n- cooldown: 2km @z2\n- cooldown: lap-button"
+
+  /*
   workout: 7x1k IV
   - warmup: 2km @z2
   - repeat: 3
@@ -59,6 +74,9 @@ class WorkoutSpec extends FlatSpec with Matchers {
             RecoverStep(DistanceDuration(400, m)))),
           RecoverStep(DistanceDuration(2, km), Some(HrZoneTarget(2))),
           CooldownStep(LapButtonPressed)))))
+
+    val x = Workout.parseDef(testWorkout2Repeat).map(_.json)
+    println(x)
   }
 
   "Workout" should "parse various printable workout-names correctly" in {
@@ -76,4 +94,11 @@ class WorkoutSpec extends FlatSpec with Matchers {
     val expectJson = Json.parse(is)
     Workout.parseDef(testWO).map(_.json) should be(Right(expectJson))
   }
+
+  "Workout" should "dump json iv correctly" in {
+    val is = getClass.getClassLoader.getResourceAsStream("iv-garmin-connect.json")
+    val expectJson = Json.parse(is)
+    Workout.parseDef(testWorkout2Repeat).map(_.json) should be(Right(expectJson))
+  }
+
 }
