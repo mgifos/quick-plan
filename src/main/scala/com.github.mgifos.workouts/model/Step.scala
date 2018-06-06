@@ -39,9 +39,9 @@ case class RepeatStep(count: Int, steps: Seq[Step]) extends Step {
 
   override def json(order: Int) = Json.obj(
     "stepId" -> JsNull,
-    "stepOrder" -> 2,
+    "stepOrder" -> order,
     "stepType" -> Json.obj(
-      "stepTypeId" -> 6,
+      "stepTypeId" -> typeId,
       "stepTypeKey" -> "repeat"),
     "numberOfIterations" -> count,
     "smartRepeat" -> false,
