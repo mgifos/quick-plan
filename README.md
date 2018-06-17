@@ -12,7 +12,7 @@ running: 15k, 3x3.2k @HMP
 - cooldown: lap-button
 ```
 and the tool's job is actually to translate it to this:
-![15k workout](htthttps://github.com/mgifos/quick-plan/images/15k-wo.png)
+![15k workout](https://github.com/mgifos/quick-plan/images/15k-wo.png)
 
 ## File format
 
