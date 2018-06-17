@@ -1,114 +1,114 @@
 WEEK,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday,Estimated km,,Duration,Avg km,Miles
-1,,"workout: 14k, 4x 1.6k @TMP
+1,,"running: 14k, 4x 1.6k @TMP
 - warmup: 2km @z2
 - repeat: 4
   - run: 1600m @ 5:00-4:30
   - recover: 900m @z2
 - run: 2km
-- cooldown: lap-button","workout: 8k jog
+- cooldown: lap-button","running: 8k jog
 - run: 8km @z2
-- cooldown: lap-button","workout: 11-15k, middle 5k @MP
+- cooldown: lap-button","running: 11-15k, middle 5k @MP
 - warmup: 4km @z2
 - run: 5km @ 5:40-5:30
 - run: 6km @z2
-- cooldown: lap-button",,"workout: 1.5h run
+- cooldown: lap-button",,"running: 1.5h run
 - run: 90:00
-- cooldown: lap-button","workout: 3h run
+- cooldown: lap-button","running: 3h run
 - run: 180:00
 - cooldown: lap-button",78.0,,0:10:00,1.7,1.0
 2,,"14k, 4x 1.6k @TMP",8k jog,"11-15k, middle 5k @MP",,1.5h run,3h run,78.0,,0:15:00,2.5,1.6
-3,,"workout: 14k, 2x1.6k @HMP
+3,,"running: 14k, 2x1.6k @HMP
 - warmup: 4km @z2
 - repeat: 2
   - run: 1.6km @ 5:05-4:50
   - recover: 1.4km @z2
 - run: 4km @z2
-- cooldown: lap-button",8k jog,"11-15k, middle 5k @MP",,"workout: 2h run
+- cooldown: lap-button",8k jog,"11-15k, middle 5k @MP",,"running: 2h run
 - run: 120:00
-- cooldown: lap-button","workout: 3.5h run
+- cooldown: lap-button","running: 3.5h run
 - run: 210:00
 - cooldown: lap-button",90.0,,0:30:00,5.0,3.1
-4,,"workout: 10k, 3x1.6k @TMP
+4,,"running: 10k, 3x1.6k @TMP
 - warmup: 1500m @z2
 - repeat: 3
   - run: 1600m @ 5:00-4:30
   - recover: 900m @z2
 - run: 1km @z2
-- cooldown: lap-button",8k jog,"workout: 10k, middle 3.2k @MP
+- cooldown: lap-button",8k jog,"running: 10k, middle 3.2k @MP
 - warmup: 4km @z2
 - run: 3200m @ 5:40-5:30
 - run: 2800m @z2
 - cooldown: lap-button",,1.5h run,2h run,63.0,,0:40:00,6.7,4.1
-5,,"workout: 15k, 6x1.6k @TMP
+5,,"running: 15k, 6x1.6k @TMP
 - warmup: 2km @z2
 - repeat: 6
   - run: 1600m @ 5:00-4:30
   - recover: 400m @z2
 - run: 1km
-- cooldown: lap-button",8k jog,"workout: 15k, middle 5k @MP
+- cooldown: lap-button",8k jog,"running: 15k, middle 5k @MP
 - warmup: 5km @z2
 - run: 5km @ 5:40-5:30
 - run: 5km @z2
-- cooldown: lap-button",,"workout: 3.5-4h run
+- cooldown: lap-button",,"running: 3.5-4h run
 - run 225:00
 - cooldown: lap-button",3h run,104.7,,0:45:00,7.5,4.7
 6,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,3.5-4h run,3h run,104.7,,0:50:00,8.3,5.2
-7,,"workout: 15k, 6x1.6k @HMP
+7,,"running: 15k, 6x1.6k @HMP
 - warmup: 2km @z2
 - repeat: 6
   - run: 1600m @ 5:05-4:50
   - recover: 400m @z2
 - run: 1km
-- cooldown: lap-button",8k jog,"15k, middle 5k @MP",,3.5-4h run,"workout: 3h run, last @MP
+- cooldown: lap-button",8k jog,"15k, middle 5k @MP",,3.5-4h run,"running: 3h run, last @MP
 - run: 120:00
 - run: 60:00 @ 5:40-5:30
 - cooldown: lap-button",104.7,,1:00:00,10.0,6.2
-8,,"workout: 15k, 3x3.2k @HMP
+8,,"running: 15k, 3x3.2k @HMP
 - warmup: 2km @z2
 - repeat: 3
   - run: 3200m @ 5:05-4:50
   - recover: 800m @z2
 - run: 1km @z2
-- cooldown: lap-button",8k jog,"15k, middle 5k @MP",,2h run,"workout: 2.5h run
+- cooldown: lap-button",8k jog,"15k, middle 5k @MP",,2h run,"running: 2.5h run
 - run: 150:00
 - cooldown: lap-button",83.0,,1:20:00,13.3,8.3
-9,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,"workout: 4h run
+9,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,"running: 4h run
 - run: 240:00
-- cooldown: lap-button","workout: 3.5h run, last @MP
+- cooldown: lap-button","running: 3.5h run, last @MP
 - run: 150:00
 - run: 60:00 @ 5:40-5:30
 - cooldown: lap-button",113.0,,1:30:00,15.0,9.3
 10,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,4-hour run,"3.5h run, last @MP",113.0,,1:45:00,17.5,10.9
 11,,"15k, 3x3.2k @HMP",8k jog,"15k, middle 5k @MP",,2.5h run,3h run,93.0,,2:00:00,20.0,12.4
-12,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,4h run,"workout: 5h run
+12,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,4h run,"running: 5h run
 - run: 300:00
 - cooldown: lap-button",128.0,,2:30:00,25.0,15.5
 13,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,4h run,5h run,128.0,,3:00:00,30.0,18.6
-14,,"workout: 15k, 4x1.6k @TMP
+14,,"running: 15k, 4x1.6k @TMP
 - warmup: 3km @z2
 - repeat: 4
   - run: 1600m @ 5:00-4:30
   - recover: 1400m @z2
 - run: 1km @z2
 - cooldown: lap-button",8k jog,"15k, middle 5k @MP",,2h run,2h run,78.0,,3:30:00,35.0,21.7
-15,,"workout: 11k, 3x1.6k @MP
+15,,"running: 11k, 3x1.6k @MP
 - warmup: 1.5km @z2
 - repeat: 3
   - run: 1600m @ 5:40-5:30
   - recover: 1400m @z2
 - run: 500m @z2
-- cooldown: lap-button",8k jog,"workout: 11k, middle 5k @MP
+- cooldown: lap-button",8k jog,"running: 11k, middle 5k @MP
 - warmup: 3km @z2
 - run: 5km @ 5:40-5:30
 - run: 3km @z2
-- cooldown: lap-button",,1.5h run,"workout: easy 1h jog
+- cooldown: lap-button",,1.5h run,"running: easy 1h jog
 - run: 60:00
 - cooldown: lap-button",55.0,,4:00:00,40.0,24.8
-16,,"workout: 10k, middle 5k @HMP
+16,,"running: 10k, middle 5k @HMP
 - warmup: 3km @z2
 - run: 5km @ 5:05-4:30
 - run: 2km @z2
-- cooldown: lap-button",8k jog,"workout: easy 5k jog
+- cooldown: lap-button",8k jog,"running: easy 5k jog
 - run: 5km
 - cooldown: lap-button",,Race day!,,103.0,,5:00:00,50.0,31.1
 ,,,,,,,,"1,517.0",,,,
