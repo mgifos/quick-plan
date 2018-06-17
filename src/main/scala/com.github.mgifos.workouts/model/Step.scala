@@ -29,7 +29,7 @@ case class WarmupStep(duration: Duration, target: Option[Target] = None) extends
 
 case class CooldownStep(duration: Duration, target: Option[Target] = None) extends DurationStep("cooldown", 2)
 
-case class RunStep(duration: Duration, target: Option[Target] = None) extends DurationStep("interval", 3)
+case class IntervalStep(duration: Duration, target: Option[Target] = None) extends DurationStep("interval", 3)
 
 case class RecoverStep(duration: Duration, target: Option[Target] = None) extends DurationStep("recovery", 4)
 
@@ -70,7 +70,7 @@ object Step {
   private def parseDurationStep(x: String): DurationStep = x match {
     case StepHeader(name, params) => name match {
       case "warmup" => WarmupStep.tupled(expect(params))
-      case "run" => RunStep.tupled(expect(params))
+      case "run" | "bike" => IntervalStep.tupled(expect(params))
       case "recover" => RecoverStep.tupled(expect(params))
       case "cooldown" => CooldownStep.tupled(expect(params))
       case _ => throw new IllegalArgumentException(s"Duration step type was expected, $name")

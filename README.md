@@ -3,7 +3,7 @@ is a command line tool to define, import, schedule and share GarminConnect worko
 
 An example of a workout definition notation:
 ```sh
-workout: 15k, 3x3.2k @HMP
+running: 15k, 3x3.2k @HMP
 - warmup: 2km @z2
 - repeat: 3
   - run: 3200m @ 5:05-4:50
@@ -12,7 +12,7 @@ workout: 15k, 3x3.2k @HMP
 - cooldown: lap-button
 ```
 and the tool's job is actually to translate it to this:
-![15k workout](https://i.imgur.com/vxXNV7w.png)
+![15k workout](htthttps://github.com/mgifos/quick-plan/images/15k-wo.png)
 
 ## File format
 
@@ -22,10 +22,10 @@ An example of 2-weeks training plan, containing 2 workout definitions, 4 referen
 
 | Week | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 | ----:| --- | --- | --- | --- | --- | --- | --- |
-| 1    | ``workout: run-fast``<br>``- warmup: 10:00 @ z2``<br>``- repeat: 3``<br>&nbsp;&nbsp;``- run: 1.5km @ 5:10-4:40``<br>&nbsp;&nbsp;``- recover: 500m @ z2``<br>``- cooldown: 05:00``|rest|rest|run-fast|rest|rest|rest|
-| 2    | run-fast| ``workout: long-15`` <br> ``- run: 15 km @ z2``|rest|run-fast|rest|rest|long-15|
+| 1    | ``running: run-fast``<br>``- warmup: 10:00 @ z2``<br>``- repeat: 3``<br>&nbsp;&nbsp;``- run: 1.5km @ 5:10-4:40``<br>&nbsp;&nbsp;``- recover: 500m @ z2``<br>``- cooldown: 05:00``|rest|rest|run-fast|rest|rest|rest|
+| 2    | run-fast| ``cycling: cycle-wo`` <br> ``- bike: 15 km @ 20.0-30kph``|rest|run-fast|rest|rest|cycle-wo|
 
-Checkout a [complete training plan for 80K ultra](https://docs.google.com/spreadsheets/d/1b1ZzrAFrjd-kvPq11zlbE2bWn2IQmUy0lBqIOFjqbwk/edit?usp=sharing). It was originally published in an article of Runner's world website - here's [the link](https://www.runnersworld.com/ultrarunning/the-ultimate-ultramarathon-training-plan).
+Checkout a [complete training plan for 80K ultra](https://docs.google.com/spreadsheets/d/1b1ZzrAFrjd-kvPq11zlbE2bWn2IQmUy0lBqIOFjqbwk/edit?usp=sharing). It was originally published in an article on Runner's world website - here's [the link](https://www.runnersworld.com/ultrarunning/the-ultimate-ultramarathon-training-plan).
 
 ## Installation
 
@@ -67,11 +67,13 @@ quick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-
 ```
 
 ## Workout notation
-The reserved keywords of the notation are: workout, warmup, cooldown, run, repeat, recover and lap-button.
+The reserved keywords of the notation are: workout, warmup, cooldown, run, bike, repeat, recover and lap-button.
 
 **`<workout>`** := `<header><step>+`
 
-**`<header>`** := `workout: <name>`
+**`<header>`** := `<sport>: <name>`
+
+**`<sport>`** := (running | cycling)
 
 **`<name>`** := `[\u0020-\u007F]+` (printable ascii characters)
 
@@ -79,7 +81,7 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, repea
 
 **`<step-def>`** := `<simple-step> | <repetition-step>`
 
-**`<simple-step>`** := `(warmup | cooldown | run | recover): <duration> [@ <target>]`
+**`<simple-step>`** := `(warmup | cooldown | run | bike | recover): <duration> [@ <target>]`
 
 **`<repetition-step>`** := `repeat: <count>(<newline>  - <simple-step>)+`
 
@@ -95,7 +97,11 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, repea
 
 **`<pace-target>`** := `<pace> - <pace>`
 
+**`<speed-target>`** := `<kph-speed> - <kph-speed> kph`
+
 **`<pace>`** := `<minutes>:<seconds>`
+
+**`<kph-speed>`** := `\d{1,3}(\.\d)?`
 
 **`<minutes>`** := `\d{1,2}`
 
