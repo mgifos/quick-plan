@@ -40,7 +40,6 @@ class WorkoutSpec extends FlatSpec with Matchers {
 
     testNames.foreach { testName =>
       val x = Workout.parseDef(testWO.replace("run-fast", testName))
-      println(x)
       x.right.get.name should be(testName)
     }
   }
