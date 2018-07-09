@@ -10,15 +10,14 @@ class WeeklyPlan(csv: Array[Byte]) {
 
   private lazy val processed: Seq[Option[Workout]] = {
 
-    def weekPlan(week: Week, acc: Seq[Option[Workout]]): Seq[Option[Workout]] = Seq.tabulate(7) { weekDayNo =>
-      val maybeDayText = week.lift(weekDayNo + 1).flatMap(text => Option(text.trim).filter(_.nonEmpty))
-      maybeDayText.map { dayText =>
-        Workout.parseDef(dayText) match {
-          case Right(definition) => definition
-          case Left(_) => onlyDefs(acc).find(_.name == dayText).map(_.toRef).getOrElse(WorkoutNote(dayText))
-        }
+    def weekPlan(week: Week, previousWeeks: Seq[Option[Workout]]): Seq[Option[Workout]] = Seq.tabulate(7) { weekDayNo =>
+      week.lift(weekDayNo + 1).flatMap(text => Option(text.trim).filter(_.nonEmpty))
+    }.foldLeft(Seq.empty[Option[Workout]])((acc, maybeDayText) => acc :+ maybeDayText.map { dayText =>
+      Workout.parseDef(dayText) match {
+        case Right(definition) => definition
+        case Left(_) => onlyDefs(previousWeeks ++ acc).find(_.name == dayText).map(_.toRef).getOrElse(WorkoutNote(dayText))
       }
-    }
+    })
 
     def loop(weeks: List[Week], acc: Seq[Option[Workout]]): Seq[Option[Workout]] = weeks match {
       case Nil => acc
