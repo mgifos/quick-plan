@@ -103,6 +103,6 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 
 **`<kph-speed>`** := `\d{1,3}(\.\d)?`
 
-**`<minutes>`** := `\d{1,2}`
+**`<minutes>`** := `\d{1,3}`
 
 **`<seconds>`** := `\d{2}`
