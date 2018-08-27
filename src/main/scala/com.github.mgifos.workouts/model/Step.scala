@@ -56,7 +56,7 @@ object Step {
   private val StepHeader = """^\s*-\s*(\w*):(.*)$""".r
   private val ParamsRx = """^([\w-\.:\s]+)\s*(@(.*))?$""".r
 
-  def parse(x: String): Step = x match {
+  def parse(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Step = x match {
     case StepRx(header, subSteps, _) if subSteps.nonEmpty => header match {
       case StepHeader(name, params) =>
         assert(name == "repeat", "must be 'repeat' if contains sub-steps")
@@ -67,7 +67,7 @@ object Step {
     case _ => throw new IllegalArgumentException(s"Cannot parse step:$x")
   }
 
-  private def parseDurationStep(x: String): DurationStep = x match {
+  private def parseDurationStep(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): DurationStep = x match {
     case StepHeader(name, params) => name match {
       case "warmup" => WarmupStep.tupled(expect(params))
       case "run" | "bike" => IntervalStep.tupled(expect(params))
@@ -78,7 +78,7 @@ object Step {
     case _ => throw new IllegalArgumentException(s"Cannot parse step type $x")
   }
 
-  private def expect(x: String): (Duration, Option[Target]) = x match {
+  private def expect(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): (Duration, Option[Target]) = x match {
     case ParamsRx(duration, _, target) =>
       val maybeTarget = Option(target).filter(_.trim.nonEmpty).map(Target.parse)
       (Duration.parse(duration.trim), maybeTarget)

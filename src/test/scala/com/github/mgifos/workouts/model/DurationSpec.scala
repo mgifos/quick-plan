@@ -5,6 +5,8 @@ import com.github.mgifos.workouts.model.DistanceUnits._
 
 class DurationSpec extends FlatSpec with Matchers {
 
+  implicit val msys = MeasurementSystems.metric
+
   "Duration" should "parse correctly" in {
 
     a[IllegalArgumentException] should be thrownBy Duration.parse("")

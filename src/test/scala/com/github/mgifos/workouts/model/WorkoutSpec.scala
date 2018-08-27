@@ -1,10 +1,12 @@
 package com.github.mgifos.workouts.model
 
-import org.scalatest.{ FlatSpec, Matchers }
 import com.github.mgifos.workouts.model.DistanceUnits._
+import org.scalatest.{ FlatSpec, Matchers }
 import play.api.libs.json.Json
 
 class WorkoutSpec extends FlatSpec with Matchers {
+
+  implicit val msys = MeasurementSystems.metric
 
   /*
   running: run-fast
@@ -29,7 +31,7 @@ class WorkoutSpec extends FlatSpec with Matchers {
         WorkoutDef("running", "run-fast", Seq(
           WarmupStep(TimeDuration(minutes = 10)),
           RepeatStep(2, Seq(
-            IntervalStep(DistanceDuration(1500, m), Some(PaceTarget(Pace("4:30"), Pace("5:00")))),
+            IntervalStep(DistanceDuration(1500, m), Some(PaceTarget(Pace(msys.distance, "4:30"), Pace(msys.distance, "5:00")))),
             RecoverStep(TimeDuration(1, 30), Some(HrZoneTarget(2))))),
           CooldownStep(LapButtonPressed)))))
   }
@@ -56,7 +58,7 @@ class WorkoutSpec extends FlatSpec with Matchers {
       Right(
         WorkoutDef("cycling", "cycle-test", Seq(
           WarmupStep(TimeDuration(minutes = 5)),
-          IntervalStep(DistanceDuration(20, km), Some(SpeedTarget(KphSpeed("20.0"), KphSpeed("100")))),
+          IntervalStep(DistanceDuration(20, km), Some(SpeedTarget(Speed(km, "20.0"), Speed(km, "100")))),
           CooldownStep(LapButtonPressed)))))
   }
 }

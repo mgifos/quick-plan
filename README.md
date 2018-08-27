@@ -45,6 +45,8 @@ Usage: quick-plan [import|schedule] [options] <file>
 
   -e, --email <value>      E-mail to login to Garmin Connect
   -p, --password <value>   Password to login to Garmin Connect
+  -m, --measurement_system <value>
+                           "metric" (default) or "imperial" (miles, inches, ...) measurement system choice.
   -x, --delete             Delete all existing workouts with same names as the ones that are going to be imported.
   --help                   prints this usage text
 
@@ -95,9 +97,9 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 
 **`<zone-target>`** := `z[1-6]`
 
-**`<pace-target>`** := `<pace> - <pace>`
+**`<pace-target>`** := `<pace> - <pace> (mpk | mpm)?`
 
-**`<speed-target>`** := `<kph-speed> - <kph-speed> kph`
+**`<speed-target>`** := `<kph-speed> - <kph-speed> (kph | mph)?`
 
 **`<pace>`** := `<minutes>:<seconds>`
 
@@ -106,3 +108,14 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 **`<minutes>`** := `\d{1,3}`
 
 **`<seconds>`** := `\d{2}`
+
+## Unit of measurements (metric vs imperial)
+
+As Garmin supports metric and imperial measurement systems, quick-plan can do this as well. There are two ways of usage:
+- implicit (through the tool configuration (see the option -m) or
+- explicit (it can be specified within the workout definition by using units:
+  - km vs mi (for distance),
+  - kph vs mph (for speed) and
+  - mpk vs mpm (for pace).
+
+If not specified -m value from configuration will be used ('metric' by default).
