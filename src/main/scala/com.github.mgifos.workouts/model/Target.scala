@@ -16,6 +16,16 @@ case class HrZoneTarget(zone: Int) extends Target {
     "zoneNumber" -> zone.toString)
 }
 
+case class HrCustomTarget(from: Int, to: Int) extends Target {
+  override def json = Json.obj(
+    "targetType" -> Json.obj(
+      "workoutTargetTypeId" -> 4,
+      "workoutTargetTypeKey" -> "heart.rate.zone"),
+    "targetValueOne" -> from,
+    "targetValueTwo" -> to,
+    "zoneNumber" -> JsNull)
+}
+
 case class PaceTarget(from: Pace, to: Pace) extends Target {
   override def json = Json.obj(
     "targetType" -> Json.obj(
@@ -66,12 +76,13 @@ case class Speed(unit: DistanceUnits.DistanceUnit, exp: String) {
 
 object Target {
   private val HrZoneRx = """^z(\d)$""".r
+  private val HrCustomRx = """^(\d{1,3})\s*-\s*(\d{1,3})\s*bpm$""".r
   private val PaceRangeRx = """^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*(mpk|mpm)?$""".r
-
   private val SpeedRangeRx = """^(\d{1,3}(\.\d{1})?)\s*-\s*(\d{1,3}(\.\d{1})?)\s*(kph|mph)?""".r
 
   def parse(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Target = x.trim match {
     case HrZoneRx(zone) => HrZoneTarget(zone.toInt)
+    case HrCustomRx(from, to) => HrCustomTarget(from.toInt, to.toInt)
     case SpeedRangeRx(from, _, to, _, uom) =>
       val du = Option(uom).fold(msys.distance)(DistanceUnits.withSpeedUOM)
       SpeedTarget(Speed(du, from), Speed(du, to))

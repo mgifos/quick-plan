@@ -2,6 +2,7 @@ package com.github.mgifos.workouts.model
 
 import org.scalatest.{ FlatSpec, Matchers }
 import com.github.mgifos.workouts.model.DistanceUnits._
+import play.api.libs.json.{ JsNull, Json }
 
 class TargetSpec extends FlatSpec with Matchers {
 
@@ -29,5 +30,17 @@ class TargetSpec extends FlatSpec with Matchers {
     mpm.from.speed should be(6.189784592848557D)
 
     a[IllegalArgumentException] should be thrownBy Target.parse("5:20-04:30 unknownUOM")
+  }
+
+  "Target" should "handle custom HR specification correctly" in {
+    val hrcTarget = Target.parse("130-150 bpm").asInstanceOf[HrCustomTarget]
+    hrcTarget should be(HrCustomTarget(130, 150))
+    hrcTarget.json should be(Json.obj(
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> 4,
+        "workoutTargetTypeKey" -> "heart.rate.zone"),
+      "targetValueOne" -> 130,
+      "targetValueTwo" -> 150,
+      "zoneNumber" -> JsNull))
   }
 }
