@@ -26,7 +26,7 @@ case class PaceTarget(from: Pace, to: Pace) extends Target {
     "zoneNumber" -> JsNull)
 }
 
-case class SpeedTarget(from: KphSpeed, to: KphSpeed) extends Target {
+case class SpeedTarget(from: Speed, to: Speed) extends Target {
   override def json = Json.obj(
     "targetType" -> Json.obj(
       "workoutTargetTypeId" -> 5,
@@ -46,33 +46,38 @@ object NoTarget extends Target {
     "zoneNumber" -> JsNull)
 }
 
-case class Pace(exp: String) {
+case class Pace(uom: DistanceUnits.DistanceUnit, exp: String) {
   def minutes: Int = exp.trim.takeWhile(_ != ':').toInt
   def seconds: Int = exp.trim.split(":").last.toInt
 
   /**
    * @return Speed in m/s
    */
-  def speed: Double = 1000D / (minutes * 60 + seconds)
+  def speed: Double = uom.toMeters(1) / (minutes * 60 + seconds)
 }
 
-case class KphSpeed(exp: String) {
+case class Speed(unit: DistanceUnits.DistanceUnit, exp: String) {
 
   /**
    * @return Speed in m/s
    */
-  def speed: Double = exp.toDouble * 10 / 36
+  def speed: Double = unit.toMeters(exp.toDouble) / 3600
 }
 
 object Target {
   private val HrZoneRx = """^z(\d)$""".r
-  private val PaceRangeRx = """^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$""".r
-  private val SpeedRangeRx = """^(\d{1,3}(\.\d{1})?)\s*-\s*(\d{1,3}(\.\d{1})?)\s*kph$""".r
+  private val PaceRangeRx = """^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*(mpk|mpm)?$""".r
 
-  def parse(x: String): Target = x.trim match {
+  private val SpeedRangeRx = """^(\d{1,3}(\.\d{1})?)\s*-\s*(\d{1,3}(\.\d{1})?)\s*(kph|mph)?""".r
+
+  def parse(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Target = x.trim match {
     case HrZoneRx(zone) => HrZoneTarget(zone.toInt)
-    case SpeedRangeRx(from, _, to, _) => SpeedTarget(KphSpeed(from), KphSpeed(to))
-    case PaceRangeRx(from, to) => PaceTarget(Pace(from), Pace(to))
+    case SpeedRangeRx(from, _, to, _, uom) =>
+      val du = Option(uom).fold(msys.distance)(DistanceUnits.withSpeedUOM)
+      SpeedTarget(Speed(du, from), Speed(du, to))
+    case PaceRangeRx(from, to, uom) =>
+      val du = Option(uom).fold(msys.distance)(DistanceUnits.withPaceUOM)
+      PaceTarget(Pace(du, from), Pace(du, to))
     case _ => throw new IllegalArgumentException(s"Unknown target specification: $x")
   }
 }

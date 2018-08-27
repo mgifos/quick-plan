@@ -6,6 +6,7 @@ import java.time.LocalDate
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
+import com.github.mgifos.workouts.model._
 import com.github.mgifos.workouts.model.WeeklyPlan
 import com.typesafe.scalalogging.Logger
 import scopt.OptionParser
@@ -22,6 +23,7 @@ object Modes extends Enumeration {
 
 case class Config(
   mode: Modes.Mode = Modes.`import`,
+  system: MeasurementSystems.MeasurementSystem = MeasurementSystems.metric,
   csv: String = "",
   delete: Boolean = false,
   email: String = "",
@@ -34,6 +36,7 @@ object Main extends App {
   implicit val system: ActorSystem = ActorSystem("quick-plan")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  implicit val mSystemRead: scopt.Read[MeasurementSystems.MeasurementSystem] = scopt.Read.reads(MeasurementSystems.named)
 
   val log = Logger(getClass)
 
@@ -58,6 +61,8 @@ object Main extends App {
     opt[String]('e', "email").action((x, c) => c.copy(email = x)).text("E-mail to login to Garmin Connect")
 
     opt[String]('p', "password").action((x, c) => c.copy(password = x)).text("Password to login to Garmin Connect")
+
+    opt[MeasurementSystems.MeasurementSystem]('m', "measurement_system").action((x, c) => c.copy(system = x)).text(""""metric" (default) or "imperial" (miles, inches, ...) measurement system choice.""")
 
     opt[Unit]('x', "delete").action((_, c) => c.copy(delete = true)).text("Delete all existing workouts with same names as the ones that are going to be imported.")
 
@@ -110,7 +115,7 @@ object Main extends App {
       new String(console.readPassword())
     }
 
-    implicit val plan: WeeklyPlan = new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))
+    implicit val plan: WeeklyPlan = new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))(config.system)
 
     implicit val garmin: GarminConnect = new GarminConnect(email, password)
 

@@ -37,7 +37,7 @@ object Workout {
   private val WorkoutHeader = """^(running|cycling):\s([\u0020-\u007F]+)((\n\s*\-\s[a-z]+:.*)*)$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)((\n\s{1,}-\s.*)*))(([\s].*)*)$""".r
 
-  def parseDef(x: String): Either[String, WorkoutDef] = {
+  def parseDef(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Either[String, WorkoutDef] = {
     def loop(w: WorkoutDef, steps: String): Either[String, WorkoutDef] = steps match {
       case NextStepRx(next, _, _, _, rest, _) =>
         val newWorkout = w.withStep(Step.parse(next.trim))

@@ -4,7 +4,7 @@ import com.github.tototoshi.csv.CSVReader
 
 import scala.io.Source
 
-class WeeklyPlan(csv: Array[Byte]) {
+class WeeklyPlan(csv: Array[Byte])(implicit msys: MeasurementSystems.MeasurementSystem) {
 
   type Week = List[String]
 
