@@ -123,3 +123,9 @@ As Garmin supports metric and imperial measurement systems, quick-plan can do th
   - mpk vs mpm (for pace).
 
 If not specified -m value from configuration will be used ('metric' by default).
+
+## Known issues
+
+- It is highly recommanded to use Google Spreadsheets or LibreOffice Calc to edit CSV files, as they both force line-feed (LF) 
+instead of carriage-return (CR) character for internal line breaks when defining workouts. 
+The parser we use is not able to parse CR values within the quoted values at the moment.
