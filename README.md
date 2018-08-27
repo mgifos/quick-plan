@@ -93,11 +93,13 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 
 **`<time-duration>`** := `<minutes>:<seconds>`
 
-**`<target>`** := `<zone-target> | <pace-target>`
+**`<target>`** := `<zone-target> | <pace-target> | <hr-target>`
 
 **`<zone-target>`** := `z[1-6]`
 
 **`<pace-target>`** := `<pace> - <pace> (mpk | mpm)?`
+
+**`<hr-target>`** := `\d{1,3} - \d{1,3} bpm`
 
 **`<speed-target>`** := `<kph-speed> - <kph-speed> (kph | mph)?`
 
@@ -108,6 +110,8 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 **`<minutes>`** := `\d{1,3}`
 
 **`<seconds>`** := `\d{2}`
+
+**`<newline>`** := `[\r\n]`
 
 ## Unit of measurements (metric vs imperial)
 

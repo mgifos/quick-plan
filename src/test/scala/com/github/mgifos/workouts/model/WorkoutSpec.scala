@@ -53,7 +53,7 @@ class WorkoutSpec extends FlatSpec with Matchers {
   }
 
   "Workout" should "support cycling ws" in {
-    val testBike = "cycling: cycle-test\n- warmup: 5:00\n- bike: 20km @ 20.0-100kph\n- cooldown: lap-button"
+    val testBike = "cycling: cycle-test\r\n- warmup: 5:00\n- bike: 20km @ 20.0-100kph\r- cooldown: lap-button"
     Workout.parseDef(testBike) should be(
       Right(
         WorkoutDef("cycling", "cycle-test", Seq(

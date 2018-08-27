@@ -52,7 +52,7 @@ case class RepeatStep(count: Int, steps: Seq[Step]) extends Step {
 
 object Step {
 
-  private val StepRx = """^(-\s\w*:\s.*)((\n\s{1,}-\s.*)*)$""".r
+  private val StepRx = """^(-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*)$""".r
   private val StepHeader = """^\s*-\s*(\w*):(.*)$""".r
   private val ParamsRx = """^([\w-\.:\s]+)\s*(@(.*))?$""".r
 
