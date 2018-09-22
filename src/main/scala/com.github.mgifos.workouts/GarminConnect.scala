@@ -250,9 +250,9 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
         //"redirectAfterAccountLoginUrl" -> "https://connect.garmin.com/modern/",
         //"rememberMeChecked" -> "false",
         //"rememberMeShown" -> "true",
-        "service" -> "https://connect.garmin.com/modern",
-        //"source" -> "https://connect.garmin.com/en-US/signin",
-        //"webhost" -> "https://connect.garmin.com"
+        "service" -> "https://connect.garmin.com/modern"
+      //"source" -> "https://connect.garmin.com/en-US/signin",
+      //"webhost" -> "https://connect.garmin.com"
       )
       for {
         res1 <- Http().singleRequest(HttpRequest(uri = Uri("https://sso.garmin.com/sso/login").withQuery(Query(params)))).withoutBody
