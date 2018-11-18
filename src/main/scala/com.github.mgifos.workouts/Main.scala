@@ -26,6 +26,7 @@ case class Config(
   system: MeasurementSystems.MeasurementSystem = MeasurementSystems.metric,
   csv: String = "",
   delete: Boolean = false,
+  `import`: Boolean = true,
   email: String = "",
   password: String = "",
   start: LocalDate = LocalDate.MIN,
@@ -93,6 +94,14 @@ object Main extends App {
             failure("Either start or end date must be entered!")
           else success))
 
+    note("")
+
+    cmd("clean").
+      action((_, c) => c.copy(`import` = false, delete = true)).text(
+        "Delete all existing workouts with same names as the ones defined in the CSV file.")
+
+    note("")
+
     note("EXAMPLES").text("EXAMPLES\n\nSchedules ultra 80k plan targeting 28-4-2018 for a race day (also deletes existing workouts with the same names)" +
       "\n\nquick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv")
 
@@ -123,7 +132,7 @@ object Main extends App {
 
     for {
       maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
-      garminWorkouts <- garmin.createWorkouts(workouts)
+      garminWorkouts <- createWorkoutsTask(workouts)
       maybeScheduleMessage <- scheduleTask(garminWorkouts)
     } yield {
       log.info("\nStatistics:")
@@ -141,6 +150,13 @@ object Main extends App {
       garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
     else
       Future.successful(None)
+  }
+
+  private def createWorkoutsTask(workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect): Future[Seq[GarminWorkout]] = {
+    if (config.`import`)
+      garmin.createWorkouts(workouts)
+    else
+      Future.successful(Seq[GarminWorkout]())
   }
 
   private def scheduleTask(workouts: Seq[GarminWorkout])(implicit config: Config, garmin: GarminConnect, plan: WeeklyPlan): Future[Option[String]] = {
