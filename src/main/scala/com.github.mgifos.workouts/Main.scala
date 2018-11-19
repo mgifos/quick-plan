@@ -17,16 +17,15 @@ import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 
 object Modes extends Enumeration {
   type Mode = Value
-  val `import` = Value("import")
-  val schedule = Value("schedule")
+  val `import`: Mode = Value("import")
+  val schedule: Mode = Value("schedule")
 }
 
 case class Config(
-  mode: Modes.Mode = Modes.`import`,
+  mode: Option[Modes.Mode] = None,
   system: MeasurementSystems.MeasurementSystem = MeasurementSystems.metric,
   csv: String = "",
   delete: Boolean = false,
-  `import`: Boolean = true,
   email: String = "",
   password: String = "",
   start: LocalDate = LocalDate.MIN,
@@ -65,7 +64,9 @@ object Main extends App {
 
     opt[MeasurementSystems.MeasurementSystem]('m', "measurement_system").action((x, c) => c.copy(system = x)).text(""""metric" (default) or "imperial" (miles, inches, ...) measurement system choice.""")
 
-    opt[Unit]('x', "delete").action((_, c) => c.copy(delete = true)).text("Delete all existing workouts with same names as the ones that are going to be imported.")
+    opt[Unit]('x', "delete").action((_, c) => c.copy(delete = true)).text(
+      "Delete all existing workouts with same names as the ones contained within the file. In case of import/schedule commands, " +
+        "this will be done before the actual action.")
 
     help("help").text("prints this usage text")
 
@@ -76,12 +77,12 @@ object Main extends App {
     note("\n")
 
     cmd("import").
-      action((_, c) => c.copy(mode = Modes.`import`)).text(
+      action((_, c) => c.copy(mode = Some(Modes.`import`))).text(
         "Imports all workout definitions from CSV file. If it's omitted, it is will be on by default.")
 
     note("")
 
-    cmd("schedule").action((_, c) => c.copy(mode = Modes.schedule)).text(
+    cmd("schedule").action((_, c) => c.copy(mode = Some(Modes.schedule))).text(
       "Schedules your weekly plan defined in CSV in Garmin Connect calendar, starting from the first day of first week or" +
         " ending on the last day of the last week. Either start or end date must be entered so the scheduling can be done" +
         " properly. In case both are entered, start date has priority. All dates have to be entered in ISO date format" +
@@ -90,17 +91,9 @@ object Main extends App {
         opt[String]('s', "start").action((x, c) => c.copy(start = LocalDate.parse(x))).text("Date of the first day of the first week of the plan"),
         opt[String]('n', "end").action((x, c) => c.copy(end = LocalDate.parse(x))).text("Date of the last day of the last week of the plan\n"),
         checkConfig(c =>
-          if (c.mode == Modes.schedule && c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN))
+          if (c.mode.contains(Modes.schedule) && c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN))
             failure("Either start or end date must be entered!")
           else success))
-
-    note("")
-
-    cmd("clean").
-      action((_, c) => c.copy(`import` = false, delete = true)).text(
-        "Delete all existing workouts with same names as the ones defined in the CSV file.")
-
-    note("")
 
     note("EXAMPLES").text("EXAMPLES\n\nSchedules ultra 80k plan targeting 28-4-2018 for a race day (also deletes existing workouts with the same names)" +
       "\n\nquick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv")
@@ -132,12 +125,12 @@ object Main extends App {
 
     for {
       maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
-      garminWorkouts <- createWorkoutsTask(workouts)
-      maybeScheduleMessage <- scheduleTask(garminWorkouts)
+      maybeGarminWorkouts <- createWorkoutsTask(workouts)
+      maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
     } yield {
       log.info("\nStatistics:")
       maybeDeleteMessage.foreach(msg => log.info("  " + msg))
-      log.info(s"  ${garminWorkouts.length} imported")
+      maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
       maybeScheduleMessage.foreach(msg => log.info("  " + msg))
     }
   }
@@ -152,16 +145,16 @@ object Main extends App {
       Future.successful(None)
   }
 
-  private def createWorkoutsTask(workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect): Future[Seq[GarminWorkout]] = {
-    if (config.`import`)
-      garmin.createWorkouts(workouts)
+  private def createWorkoutsTask(workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect): Future[Option[Seq[GarminWorkout]]] = {
+    if (config.mode.exists(Seq(Modes.`import`, Modes.schedule).contains))
+      garmin.createWorkouts(workouts).map(Option.apply)
     else
-      Future.successful(Seq[GarminWorkout]())
+      Future.successful(None)
   }
 
   private def scheduleTask(workouts: Seq[GarminWorkout])(implicit config: Config, garmin: GarminConnect, plan: WeeklyPlan): Future[Option[String]] = {
 
-    if (config.mode == Modes.schedule) {
+    if (config.mode.contains(Modes.schedule)) {
 
       val start = (config.start, config.end) match {
         case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get.length - 1)
