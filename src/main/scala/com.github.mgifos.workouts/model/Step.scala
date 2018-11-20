@@ -70,7 +70,7 @@ object Step {
   private def parseDurationStep(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): DurationStep = x match {
     case StepHeader(name, params) => name match {
       case "warmup" => WarmupStep.tupled(expect(params))
-      case "run" | "bike" => IntervalStep.tupled(expect(params))
+      case "run" | "bike" | "go" => IntervalStep.tupled(expect(params))
       case "recover" => RecoverStep.tupled(expect(params))
       case "cooldown" => CooldownStep.tupled(expect(params))
       case _ => throw new IllegalArgumentException(s"Duration step type was expected, $name")

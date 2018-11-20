@@ -69,7 +69,7 @@ quick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-
 ```
 
 ## Workout notation
-The reserved keywords of the notation are: workout, warmup, cooldown, run, bike, repeat, recover and lap-button.
+The reserved keywords of the notation are: workout, warmup, cooldown, run, bike, go, repeat, recover and lap-button.
 
 **`<workout>`** := `<header><step>+`
 
@@ -83,7 +83,7 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 
 **`<step-def>`** := `<simple-step> | <repetition-step>`
 
-**`<simple-step>`** := `(warmup | cooldown | run | bike | recover): <duration> [@ <target>]`
+**`<simple-step>`** := `(warmup | cooldown | run | bike | go | recover): <duration> [@ <target>]`
 
 **`<repetition-step>`** := `repeat: <count>(<newline>  - <simple-step>)+`
 
@@ -126,6 +126,6 @@ If not specified -m value from configuration will be used ('metric' by default).
 
 ## Known issues
 
-- It is highly recommanded to use Google Spreadsheets or LibreOffice Calc to edit CSV files, as they both force line-feed (LF) 
+- It is highly recommended to use Google Spreadsheets or LibreOffice Calc to edit CSV files, as they both force line-feed (LF)
 instead of carriage-return (CR) character for internal line breaks when defining workouts. 
 The parser we use is not able to parse CR values within the quoted values at the moment.
