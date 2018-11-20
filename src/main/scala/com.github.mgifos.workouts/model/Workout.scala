@@ -13,7 +13,7 @@ case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) exten
   def json: JsValue = Json.obj(
     "sportType" -> Json.obj(
       "sportTypeId" -> sportId(sport),
-      "sportTypeKey" -> sport),
+      "sportTypeKey" -> sportTypeKey(sport)),
     "workoutName" -> name,
     "workoutSegments" -> Json.arr(
       Json.obj(
@@ -34,7 +34,7 @@ case class WorkoutNote(note: String) extends Workout {
 
 object Workout {
 
-  private val WorkoutHeader = """^(running|cycling):\s([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$""".r
+  private val WorkoutHeader = """^(running|cycling|custom):\s([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*))(([\s].*)*)$""".r
 
   def parseDef(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Either[String, WorkoutDef] = {
@@ -59,6 +59,12 @@ object Workout {
   def sportId(sport: String) = sport match {
     case "running" => 1
     case "cycling" => 2
-    case _ => throw new IllegalArgumentException("Only running and cycling workouts are supported.")
+    case "custom" => 3
+    case _ => throw new IllegalArgumentException("Only running, cycling and 'custom' workouts are supported.")
+  }
+
+  def sportTypeKey(sport: String) = sport match {
+    case "custom" => "other"
+    case _ => sport
   }
 }

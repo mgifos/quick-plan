@@ -75,7 +75,7 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 
 **`<header>`** := `<sport>: <name>`
 
-**`<sport>`** := (running | cycling)
+**`<sport>`** := (running | cycling | custom)
 
 **`<name>`** := `[\u0020-\u007F]+` (printable ascii characters)
 
