@@ -28,9 +28,9 @@ import scala.util.Failure
 
 case class GarminWorkout(name: String, id: Long)
 
-class GarminConnect(email: String, password: String)(implicit system: ActorSystem, executionContext: ExecutionContext, mat: Materializer) {
+case class GarminSession(headers: Seq[HttpHeader])
 
-  case class Session(headers: Seq[HttpHeader])
+class GarminConnect(email: String, password: String)(implicit system: ActorSystem, executionContext: ExecutionContext, mat: Materializer) {
 
   case class Login(forceNewSession: Boolean)
 
@@ -42,20 +42,17 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
    * @param workouts
    * @return
    */
-  def createWorkouts(workouts: Seq[WorkoutDef]): Future[Seq[GarminWorkout]] = {
+  def createWorkouts(workouts: Seq[WorkoutDef])(implicit session: GarminSession): Future[Seq[GarminWorkout]] = {
 
-    val source = Source.fromFuture(login()).flatMapConcat { session =>
-      log.info("\nCreating workouts:")
-      Source(workouts.map { workout =>
-        val req = Post("https://connect.garmin.com/modern/proxy/workout-service/workout")
-          .withEntity(HttpEntity(`application/json`, workout.json.toString()))
-          .withHeaders(session.headers
-            :+ Referer("https://connect.garmin.com/modern/workout/create/running")
-            :+ RawHeader("NK", "NT"))
-        workout.name -> req
-      })
-    }
-
+    log.info("\nCreating workouts:")
+    val source = Source(workouts.map { workout =>
+      val req = Post("https://connect.garmin.com/modern/proxy/workout-service/workout")
+        .withEntity(HttpEntity(`application/json`, workout.json.toString()))
+        .withHeaders(session.headers
+          :+ Referer("https://connect.garmin.com/modern/workout/create/running")
+          :+ RawHeader("NK", "NT"))
+      workout.name -> req
+    })
     val flow = Flow[(String, HttpRequest)]
       .throttle(1, 1.second, 1, ThrottleMode.shaping)
       .mapAsync(1) {
@@ -72,7 +69,6 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
             }
           }
       }
-
     source.via(flow).runWith(Sink.seq)
   }
 
@@ -82,16 +78,13 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
    * @param workouts Workout names
    * @return Count of deleted items
    */
-  def deleteWorkouts(workouts: Seq[String]): Future[Int] = {
+  def deleteWorkouts(workouts: Seq[String])(implicit session: GarminSession): Future[Int] = {
 
-    val futureRequests = for {
-      session <- login()
-      map <- getWorkoutsMap()
-    } yield {
+    val futureRequests = getWorkoutsMap().map { wsMap =>
       log.info("\nDeleting workouts:")
       for {
         workout <- workouts
-        ids = map.getOrElse(workout, Seq.empty)
+        ids = wsMap.getOrElse(workout, Seq.empty)
         if ids.nonEmpty
       } yield {
         val label = s"$workout -> ${ids.mkString("[", ", ", "]")}"
@@ -115,70 +108,69 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
     source.runWith(Sink.seq).map(_.length)
   }
 
-  def schedule(spec: Seq[(LocalDate, GarminWorkout)]): Future[Int] = {
+  def schedule(spec: Seq[(LocalDate, GarminWorkout)])(implicit session: GarminSession): Future[Int] = {
     log.debug(s"  Scheduling spec: ${spec.mkString("\n")}")
-    Source.fromFuture(login(forceNewSession = true)).flatMapConcat { session =>
-      log.info("\nScheduling:")
-      Source(spec).map {
-        case (date, gw) =>
-          s"$date -> ${gw.name}" -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/schedule/${gw.id}")
-            .withHeaders(session.headers
-              :+ Referer("https://connect.garmin.com/modern/calendar")
-              :+ RawHeader("NK", "NT"))
-            .withEntity(HttpEntity(`application/json`, Json.obj("date" -> date.toString).toString))
-      }.throttle(1, 1.second, 1, ThrottleMode.shaping)
-        .mapAsync(1) {
-          case (label, req) =>
-            Http().singleRequest(req).withoutBody.map { res =>
-              log.debug(s"  Received $res")
-              if (res.status == OK) log.info(s"  $label")
-              else log.error(s"  Cannot schedule: $label")
-            }
-        }
-    }.runWith(Sink.seq).map(_.length)
+    log.info("\nScheduling:")
+    Source(spec).map {
+      case (date, gw) =>
+        s"$date -> ${gw.name}" -> Post(s"https://connect.garmin.com/modern/proxy/workout-service/schedule/${gw.id}")
+          .withHeaders(session.headers
+            :+ Referer("https://connect.garmin.com/modern/calendar")
+            :+ RawHeader("NK", "NT"))
+          .withEntity(HttpEntity(`application/json`, Json.obj("date" -> date.toString).toString))
+    }.throttle(1, 1.second, 1, ThrottleMode.shaping)
+      .mapAsync(1) {
+        case (label, req) =>
+          Http().singleRequest(req).withoutBody.map { res =>
+            log.debug(s"  Received $res")
+            if (res.status == OK) log.info(s"  $label")
+            else log.error(s"  Cannot schedule: $label")
+          }
+      }
+      .runWith(Sink.seq).map(_.length)
   }
 
   /**
    * Retrieves workout mapping: name -> Seq[id] @ GarminConnect
    * @return
    */
-  private def getWorkoutsMap(): Future[Map[String, Seq[Long]]] = {
-    val source = Source.fromFuture(login()).flatMapConcat { session =>
-      val req = Get("https://connect.garmin.com/modern/proxy/workout-service/workouts?start=1&limit=9999&myWorkoutsOnly=true&sharedWorkoutsOnly=false")
-        .withHeaders(session.headers
-          :+ Referer("https://connect.garmin.com/modern/workouts")
-          :+ RawHeader("NK", "NT"))
-      Source.fromFuture(
-        Http().singleRequest(req).flatMap { res =>
-          if (res.status == OK)
-            res.body.map { json =>
-              Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
-                arr.map(x => (x \ "workoutName").as[String] -> (x \ "workoutId").as[Long])
-              }.getOrElse(Seq.empty)
-                .groupBy { case (name, _) => name }
-                .map { case (a, b) => a -> b.map(_._2) }
-            }
-          else {
-            log.debug(s"Cannot retrieve workout list, response: $res")
-            Future.failed(new Error("Cannot retrieve workout list from Garmin Connect"))
+  private def getWorkoutsMap()(implicit session: GarminSession): Future[Map[String, Seq[Long]]] = {
+
+    val req = Get("https://connect.garmin.com/modern/proxy/workout-service/workouts?start=1&limit=9999&myWorkoutsOnly=true&sharedWorkoutsOnly=false")
+      .withHeaders(session.headers
+        :+ Referer("https://connect.garmin.com/modern/workouts")
+        :+ RawHeader("NK", "NT"))
+    val source = Source.fromFuture(
+      Http().singleRequest(req).flatMap { res =>
+        if (res.status == OK)
+          res.body.map { json =>
+            Json.parse(json).asOpt[Seq[JsObject]].map { arr =>
+              arr.map(x => (x \ "workoutName").as[String] -> (x \ "workoutId").as[Long])
+            }.getOrElse(Seq.empty)
+              .groupBy { case (name, _) => name }
+              .map { case (a, b) => a -> b.map(_._2) }
           }
-        })
-    }
+        else {
+          log.debug(s"Cannot retrieve workout list, response: $res")
+          Future.failed(new Error("Cannot retrieve workout list from Garmin Connect"))
+        }
+      })
     source.runWith(Sink.head)
   }
 
   private lazy val loginActor: ActorRef = system.actorOf(Props(new LoginActor()))
 
-  private def login(forceNewSession: Boolean = false): Future[Session] = ask(loginActor, Login(forceNewSession))(Timeout(2.minutes)).mapTo[Session]
+  def login(forceNewSession: Boolean = false): Future[Either[String, GarminSession]] =
+    ask(loginActor, Login(forceNewSession))(Timeout(2.minutes)).mapTo[Either[String, GarminSession]]
 
   /**
    * Holds and reloads session if neccessary
    */
   class LoginActor extends Actor {
 
-    private case class NewSession(session: Session)
+    private case class NewSession(session: GarminSession)
 
-    var maybeSession: Option[Session] = None
+    var maybeSession: Option[GarminSession] = None
 
     override def receive = {
 
@@ -189,19 +181,22 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
           case _ =>
             login.andThen {
               case util.Success(x) =>
-                origin ! x
-                self ! NewSession(x)
+                if (x.headers.exists(_.value().matches("""SESSIONID=[a-z\d-]{5,}"""))) {
+                  origin ! Right(x)
+                  self ! NewSession(x)
+                } else
+                  origin ! Left("Login was not successful, check your username and password and try again.")
               case Failure(_) =>
-                log.error("Failed to log in to Garmin Connect")
+                origin ! Left("Attempt to log in to Garmin Connect was not successful (this could be a server error).")
             }
         }
 
       case NewSession(session) =>
-        if (maybeSession.isEmpty) log.info("Successfully logged in to Garmin Connect")
+        if (maybeSession.isEmpty) log.info("Successfully logged in to Garmin Connect!")
         maybeSession = Option(session)
     }
 
-    private def login: Future[Session] = {
+    private def login: Future[GarminSession] = {
 
       def extractCookies(res: HttpResponse) = res.headers.collect { case x: `Set-Cookie` => x.cookie }.map(c => Cookie(c.name, c.value))
 
@@ -265,7 +260,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
               "password" -> password,
               "embed" -> "false")).toEntity).withHeaders(extractCookies(res1))).withoutBody
         sessionCookies <- redirectionLoop(0, "https://connect.garmin.com/modern", extractCookies(res2))
-      } yield Session(sessionCookies)
+      } yield GarminSession(sessionCookies)
     }
   }
 }

@@ -6,8 +6,7 @@ import java.time.LocalDate
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import com.github.mgifos.workouts.model._
-import com.github.mgifos.workouts.model.WeeklyPlan
+import com.github.mgifos.workouts.model.{ WeeklyPlan, _ }
 import com.typesafe.scalalogging.Logger
 import scopt.OptionParser
 
@@ -46,7 +45,7 @@ object Main extends App {
       val worker = run(config).andThen {
         case _ =>
           shutdown()
-          log.info("Logged out and closed connection")
+          log.info("Logged out. Connection is closed.")
       }
       Await.result(worker, 10.minutes)
       log.info("Bye")
@@ -123,36 +122,43 @@ object Main extends App {
 
     val workouts = plan.workouts.toIndexedSeq
 
-    for {
-      maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
-      maybeGarminWorkouts <- createWorkoutsTask(workouts)
-      maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
-    } yield {
-      log.info("\nStatistics:")
-      maybeDeleteMessage.foreach(msg => log.info("  " + msg))
-      maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
-      maybeScheduleMessage.foreach(msg => log.info("  " + msg))
+    garmin.login().flatMap {
+      case Right(s) =>
+        implicit val session: GarminSession = s
+        for {
+          maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
+          maybeGarminWorkouts <- createWorkoutsTask(workouts)
+          maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
+        } yield {
+          log.info("\nStatistics:")
+          maybeDeleteMessage.foreach(msg => log.info("  " + msg))
+          maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
+          maybeScheduleMessage.foreach(msg => log.info("  " + msg))
+        }
+      case Left(loginFailureMessage) =>
+        log.error(loginFailureMessage)
+        Future.successful(())
     }
   }
 
   /**
    * Deletes existing workouts with the same names or not
    */
-  private def deleteWorkoutsTask(workouts: Seq[String])(implicit config: Config, garmin: GarminConnect): Future[Option[String]] = {
+  private def deleteWorkoutsTask(workouts: Seq[String])(implicit config: Config, garmin: GarminConnect, session: GarminSession): Future[Option[String]] = {
     if (config.delete)
       garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
     else
       Future.successful(None)
   }
 
-  private def createWorkoutsTask(workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect): Future[Option[Seq[GarminWorkout]]] = {
+  private def createWorkoutsTask(workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect, session: GarminSession): Future[Option[Seq[GarminWorkout]]] = {
     if (config.mode.exists(Seq(Modes.`import`, Modes.schedule).contains))
       garmin.createWorkouts(workouts).map(Option.apply)
     else
       Future.successful(None)
   }
 
-  private def scheduleTask(workouts: Seq[GarminWorkout])(implicit config: Config, garmin: GarminConnect, plan: WeeklyPlan): Future[Option[String]] = {
+  private def scheduleTask(workouts: Seq[GarminWorkout])(implicit config: Config, garmin: GarminConnect, plan: WeeklyPlan, session: GarminSession): Future[Option[String]] = {
 
     if (config.mode.contains(Modes.schedule)) {
 
