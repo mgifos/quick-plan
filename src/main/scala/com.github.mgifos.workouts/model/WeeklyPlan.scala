@@ -13,9 +13,9 @@ class WeeklyPlan(csv: Array[Byte])(implicit msys: MeasurementSystems.Measurement
     def weekPlan(week: Week, previousWeeks: Seq[Option[Workout]]): Seq[Option[Workout]] = Seq.tabulate(7) { weekDayNo =>
       week.lift(weekDayNo + 1).flatMap(text => Option(text.trim).filter(_.nonEmpty))
     }.foldLeft(Seq.empty[Option[Workout]])((acc, maybeDayText) => acc :+ maybeDayText.map { dayText =>
-      Workout.parseDef(dayText) match {
-        case Right(definition) => definition
-        case Left(_) => onlyDefs(previousWeeks ++ acc).find(_.name == dayText).map(_.toRef).getOrElse(WorkoutNote(dayText))
+      Workout.parse(dayText) match {
+        case note: WorkoutNote => onlyDefs(previousWeeks ++ acc).find(_.name == dayText).map(_.toRef).getOrElse(note)
+        case w: Workout => w
       }
     })
 
@@ -35,10 +35,14 @@ class WeeklyPlan(csv: Array[Byte])(implicit msys: MeasurementSystems.Measurement
   /**
    * @return optional workout refs (defs included as refs)
    */
-  def get: Seq[Option[WorkoutRef]] = processed.map {
+  def get(): Seq[Option[WorkoutRef]] = processed.map {
     case Some(x: WorkoutDef) => Some(x.toRef)
     case Some(x: WorkoutRef) => Some(x)
     case _ => None
+  }
+
+  def invalid(): Seq[Workout] = processed.collect {
+    case Some(x) if !x.valid() => x
   }
 
   private def isAValidWeek(w: Seq[String]) = w.headOption.exists(no => no.trim.nonEmpty && no.forall(_.isDigit))

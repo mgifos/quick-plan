@@ -43,9 +43,7 @@ object Main extends App {
 
     case Some(config) =>
       val worker = run(config).andThen {
-        case _ =>
-          shutdown()
-          log.info("Logged out. Connection is closed.")
+        case _ => shutdown()
       }
       Await.result(worker, 10.minutes)
       log.info("Bye")
@@ -104,40 +102,52 @@ object Main extends App {
 
   def run(implicit config: Config): Future[Unit] = {
 
-    val console = System.console()
-
-    val email = if (config.email.nonEmpty) config.email else {
-      print("Please enter your email address to login to Garmin Connect: ")
-      console.readLine()
-    }
-
-    val password = if (config.password.nonEmpty) config.password else {
-      print("Password: ")
-      new String(console.readPassword())
-    }
-
     implicit val plan: WeeklyPlan = new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))(config.system)
 
-    implicit val garmin: GarminConnect = new GarminConnect(email, password)
+    val console = System.console()
 
-    val workouts = plan.workouts.toIndexedSeq
+    def proceedToGarmin() = {
+      val email = if (config.email.nonEmpty) config.email else {
+        print("Please enter your email address to login to Garmin Connect: ")
+        console.readLine()
+      }
+      val password = if (config.password.nonEmpty) config.password else {
+        print("Password: ")
+        new String(console.readPassword())
+      }
 
-    garmin.login().flatMap {
-      case Right(s) =>
-        implicit val session: GarminSession = s
-        for {
-          maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
-          maybeGarminWorkouts <- createWorkoutsTask(workouts)
-          maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
-        } yield {
-          log.info("\nStatistics:")
-          maybeDeleteMessage.foreach(msg => log.info("  " + msg))
-          maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
-          maybeScheduleMessage.foreach(msg => log.info("  " + msg))
-        }
-      case Left(loginFailureMessage) =>
-        log.error(loginFailureMessage)
-        Future.successful(())
+      implicit val garmin: GarminConnect = new GarminConnect(email, password)
+      val workouts = plan.workouts.toIndexedSeq
+
+      garmin.login().flatMap {
+        case Right(s) =>
+          implicit val session: GarminSession = s
+          for {
+            maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
+            maybeGarminWorkouts <- createWorkoutsTask(workouts)
+            maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
+          } yield {
+            log.info("\nStatistics:")
+            maybeDeleteMessage.foreach(msg => log.info("  " + msg))
+            maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
+            maybeScheduleMessage.foreach(msg => log.info("  " + msg))
+            log.info("Logging out and closing connection...")
+          }
+        case Left(loginFailureMessage) =>
+          log.error(loginFailureMessage)
+          Future.successful(())
+      }
+    }
+
+    if (plan.invalid().isEmpty) proceedToGarmin()
+    else {
+      plan.invalid().foreach(i => log.warn(i.toString))
+      println("Your plan contains some invalid items.")
+      print("Do you want to proceed to Garmin by skipping these items? [Y/n]")
+      "" + console.readLine() match {
+        case "" | "y" | "Y" => proceedToGarmin()
+        case _ => Future.successful(())
+      }
     }
   }
 
@@ -163,12 +173,12 @@ object Main extends App {
     if (config.mode.contains(Modes.schedule)) {
 
       val start = (config.start, config.end) match {
-        case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get.length - 1)
+        case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get().length - 1)
         case (from, _) => from
       }
 
       val woMap: Map[String, GarminWorkout] = Map(workouts.map(ga => ga.name -> ga): _*)
-      val spec = plan.get.zipWithIndex.collect {
+      val spec = plan.get().zipWithIndex.collect {
         case (Some(ref), day) if !start.plusDays(day).isBefore(LocalDate.now()) => start.plusDays(day) -> woMap(ref.name)
       }.to[Seq]
       garmin.schedule(spec).map(c => Some(s"$c scheduled"))

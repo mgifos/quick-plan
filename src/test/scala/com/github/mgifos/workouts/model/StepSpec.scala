@@ -10,7 +10,7 @@ class StepSpec extends FlatSpec with Matchers {
   "Step" should "parse correctly" in {
 
     a[IllegalArgumentException] should be thrownBy Step.parse("")
-    a[AssertionError] should be thrownBy Step.parse("- warmup: 5km\n  - run: 10km\n  - recover: 100m")
+    a[IllegalArgumentException] should be thrownBy Step.parse("- warmup: 5km\n  - run: 10km\n  - recover: 100m")
 
     Step.parse("- warmup: 5km") should be(WarmupStep(DistanceDuration(5, km)))
     Step.parse("- run: 2km @ 5:00-4:50") should be(IntervalStep(DistanceDuration(2, km), Some(PaceTarget(Pace(msys.distance, "5:00"), Pace(msys.distance, "4:50")))))

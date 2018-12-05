@@ -59,7 +59,7 @@ object Step {
   def parse(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Step = x match {
     case StepRx(header, subSteps, _) if subSteps.nonEmpty => header match {
       case StepHeader(name, params) =>
-        assert(name == "repeat", "must be 'repeat' if contains sub-steps")
+        if (name != "repeat") throw new IllegalArgumentException(s"'$name' cannot contain sub-steps, it must be 'repeat'")
         RepeatStep(params.trim.toInt, subSteps.trim.lines.toList.map(parseDurationStep))
       case _ => throw new IllegalArgumentException(s"Cannot parse repeat step $header")
     }
@@ -73,16 +73,16 @@ object Step {
       case "run" | "bike" | "go" => IntervalStep.tupled(expect(params))
       case "recover" => RecoverStep.tupled(expect(params))
       case "cooldown" => CooldownStep.tupled(expect(params))
-      case _ => throw new IllegalArgumentException(s"Duration step type was expected, $name")
+      case _ => throw new IllegalArgumentException(s"'$name' is not a duration step type")
     }
-    case _ => throw new IllegalArgumentException(s"Cannot parse step type $x")
+    case _ => throw new IllegalArgumentException(s"Cannot parse duration step: $x")
   }
 
-  private def expect(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): (Duration, Option[Target]) = x match {
+  private def expect(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): (Duration, Option[Target]) = x.trim match {
     case ParamsRx(duration, _, target) =>
       val maybeTarget = Option(target).filter(_.trim.nonEmpty).map(Target.parse)
       (Duration.parse(duration.trim), maybeTarget)
-    case _ => throw new IllegalArgumentException(s"Cannot parse step parameters $x")
+    case raw => throw new IllegalArgumentException(s"Cannot parse step parameters $raw")
   }
 }
 

@@ -89,6 +89,6 @@ object Target {
     case PaceRangeRx(from, to, uom) =>
       val du = Option(uom).fold(msys.distance)(DistanceUnits.withPaceUOM)
       PaceTarget(Pace(du, from), Pace(du, to))
-    case _ => throw new IllegalArgumentException(s"Unknown target specification: $x")
+    case raw => throw new IllegalArgumentException(s"'$raw' is not a valid target specification")
   }
 }

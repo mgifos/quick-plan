@@ -4,13 +4,14 @@ import play.api.libs.json.{ JsValue, Json }
 import Workout._
 
 trait Workout {
-  def json: JsValue
+  def json(): JsValue = Json.obj()
+  def valid(): Boolean = true
 }
 
 case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) extends Workout {
   def toRef: WorkoutRef = WorkoutRef(name)
   def withStep(step: Step): WorkoutDef = WorkoutDef(sport, name, steps :+ step)
-  def json: JsValue = Json.obj(
+  override def json(): JsValue = Json.obj(
     "sportType" -> Json.obj(
       "sportTypeId" -> sportId(sport),
       "sportTypeKey" -> sportTypeKey(sport)),
@@ -24,36 +25,44 @@ case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) exten
         "workoutSteps" -> steps.zipWithIndex.map { case (s, i) => s.json(i + 1) })))
 }
 
-case class WorkoutRef(name: String) extends Workout {
-  def json: JsValue = Json.obj()
+case class WorkoutDefFailure(`type`: String, original: String, cause: String) extends Workout {
+  override def toString = s"""Possible workout definition that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
+  override def valid(): Boolean = false
 }
 
-case class WorkoutNote(note: String) extends Workout {
-  def json: JsValue = Json.obj()
+case class WorkoutStepFailure(original: String, cause: String) extends Workout {
+  override def toString = s"""Workout steps that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
+  override def valid(): Boolean = false
 }
+
+case class WorkoutRef(name: String) extends Workout
+
+case class WorkoutNote(note: String) extends Workout
 
 object Workout {
 
-  private val WorkoutHeader = """^(running|cycling|custom):\s([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$""".r
+  private val WorkoutType = "(running|cycling|custom)"
+  private val WorkoutHeader = raw"""^$WorkoutType:\s([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*))(([\s].*)*)$""".r
+  private val PossibleWorkoutHeader = raw"""^\s*$WorkoutType\s*:\s*.*(([\r\n]+\s*.*)*)$$""".r
 
-  def parseDef(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Either[String, WorkoutDef] = {
-    def loop(w: WorkoutDef, steps: String): Either[String, WorkoutDef] = steps match {
+  def parse(text: String)(implicit msys: MeasurementSystems.MeasurementSystem): Workout = {
+    def loop(w: WorkoutDef, steps: String): Workout = steps match {
       case NextStepRx(next, _, _, _, rest, _) =>
-        val newWorkout = w.withStep(Step.parse(next.trim))
-        if (rest.trim.isEmpty) Right(newWorkout)
-        else loop(newWorkout, rest.trim)
-      case _ => Left(s"Input string cannot be parsed to Workout: $steps")
+        try {
+          val newWorkout = w.withStep(Step.parse(next.trim))
+          if (rest.trim.isEmpty) newWorkout
+          else loop(newWorkout, rest.trim)
+        } catch {
+          case ex: IllegalArgumentException => WorkoutStepFailure(text, ex.getMessage.trim)
+        }
+      case _ => WorkoutStepFailure(text, steps.trim)
     }
-    x match {
+    text match {
       case WorkoutHeader(sport, name, steps, _) => loop(WorkoutDef(sport, name), steps.trim)
-      case _ => Left(s"Input string cannot be parsed to Workout: $x")
+      case PossibleWorkoutHeader(t, _, cause) => WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
+      case _ => WorkoutNote(text)
     }
-  }
-
-  def parseRef(x: String): WorkoutRef = x match {
-    case WorkoutHeader(_, name, _, _) => WorkoutRef(name)
-    case _ => WorkoutRef(x.trim)
   }
 
   def sportId(sport: String) = sport match {
