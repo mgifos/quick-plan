@@ -47,7 +47,7 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
     log.info("\nCreating workouts:")
     val source = Source(workouts.map { workout =>
       val req = Post("https://connect.garmin.com/modern/proxy/workout-service/workout")
-        .withEntity(HttpEntity(`application/json`, workout.json.toString()))
+        .withEntity(HttpEntity(`application/json`, workout.json().toString()))
         .withHeaders(
           session.headers
             :+ Referer("https://connect.garmin.com/modern/workout/create/running")

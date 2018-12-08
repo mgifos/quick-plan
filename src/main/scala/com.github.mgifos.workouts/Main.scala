@@ -127,27 +127,7 @@ object Main extends App {
           new String(console.readPassword())
         }
 
-      implicit val garmin: GarminConnect = new GarminConnect(email, password)
-      val workouts = plan.workouts.toIndexedSeq
-
-      garmin.login().flatMap {
-        case Right(s) =>
-          implicit val session: GarminSession = s
-          for {
-            maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
-            maybeGarminWorkouts <- createWorkoutsTask(workouts)
-            maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
-          } yield {
-            log.info("\nStatistics:")
-            maybeDeleteMessage.foreach(msg => log.info("  " + msg))
-            maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
-            maybeScheduleMessage.foreach(msg => log.info("  " + msg))
-            log.info("Logging out and closing connection...")
-          }
-        case Left(loginFailureMessage) =>
-          log.error(loginFailureMessage)
-          Future.successful(())
-      }
+      syncGarmin(config, plan, new GarminConnect(email, password))
     }
 
     if (plan.invalid().isEmpty) proceedToGarmin()
@@ -162,48 +142,69 @@ object Main extends App {
     }
   }
 
-  /**
-    * Deletes existing workouts with the same names or not
-    */
-  private def deleteWorkoutsTask(
-      workouts: Seq[String])(implicit config: Config, garmin: GarminConnect, session: GarminSession): Future[Option[String]] = {
-    if (config.delete)
-      garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
-    else
-      Future.successful(None)
-  }
+  private def syncGarmin(implicit config: Config, plan: WeeklyPlan, garmin: GarminConnect): Future[Unit] = {
 
-  private def createWorkoutsTask(
-      workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect, session: GarminSession): Future[Option[Seq[GarminWorkout]]] = {
-    if (config.mode.exists(Seq(Modes.`import`, Modes.schedule).contains))
-      garmin.createWorkouts(workouts).map(Option.apply)
-    else
-      Future.successful(None)
-  }
+    def deleteWorkoutsTask(workouts: Seq[String])(implicit config: Config, garmin: GarminConnect, session: GarminSession): Future[Option[String]] = {
+      if (config.delete)
+        garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
+      else
+        Future.successful(None)
+    }
 
-  private def scheduleTask(workouts: Seq[GarminWorkout])(implicit config: Config,
-                                                         garmin: GarminConnect,
-                                                         plan: WeeklyPlan,
-                                                         session: GarminSession): Future[Option[String]] = {
+    def createWorkoutsTask(
+        workouts: Seq[WorkoutDef])(implicit config: Config, garmin: GarminConnect, session: GarminSession): Future[Option[Seq[GarminWorkout]]] = {
+      if (config.mode.exists(Seq(Modes.`import`, Modes.schedule).contains))
+        garmin.createWorkouts(workouts).map(Option.apply)
+      else
+        Future.successful(None)
+    }
 
-    if (config.mode.contains(Modes.schedule)) {
+    def scheduleTask(workouts: Seq[GarminWorkout])(implicit
+                                                   config: Config,
+                                                   garmin: GarminConnect,
+                                                   plan: WeeklyPlan,
+                                                   session: GarminSession): Future[Option[String]] = {
 
-      val start = (config.start, config.end) match {
-        case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get().length - 1)
-        case (from, _)                               => from
-      }
+      if (config.mode.contains(Modes.schedule)) {
 
-      val woMap: Map[String, GarminWorkout] = Map(workouts.map(ga => ga.name -> ga): _*)
-      val spec = plan
-        .get()
-        .zipWithIndex
-        .collect {
-          case (Some(ref), day) if !start.plusDays(day).isBefore(LocalDate.now()) => start.plusDays(day) -> woMap(ref.name)
+        val start = (config.start, config.end) match {
+          case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get().length - 1)
+          case (from, _)                               => from
         }
-        .to[Seq]
-      garmin.schedule(spec).map(c => Some(s"$c scheduled"))
-    } else
-      Future.successful(None)
+
+        val woMap: Map[String, GarminWorkout] = Map(workouts.map(ga => ga.name -> ga): _*)
+        val spec = plan
+          .get()
+          .zipWithIndex
+          .collect {
+            case (Some(ref), day) if !start.plusDays(day).isBefore(LocalDate.now()) => start.plusDays(day) -> woMap(ref.name)
+          }
+          .to[Seq]
+        garmin.schedule(spec).map(c => Some(s"$c scheduled"))
+      } else
+        Future.successful(None)
+    }
+
+    val workouts = plan.workouts.toIndexedSeq
+
+    garmin.login().flatMap {
+      case Right(s) =>
+        implicit val session: GarminSession = s
+        for {
+          maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
+          maybeGarminWorkouts <- createWorkoutsTask(workouts)
+          maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(Seq.empty[GarminWorkout])(identity))
+        } yield {
+          log.info("\nStatistics:")
+          maybeDeleteMessage.foreach(msg => log.info("  " + msg))
+          maybeGarminWorkouts.foreach(workouts => log.info(s"  ${workouts.length} imported"))
+          maybeScheduleMessage.foreach(msg => log.info("  " + msg))
+          log.info("Logging out and closing connection...")
+        }
+      case Left(loginFailureMessage) =>
+        log.error(loginFailureMessage)
+        Future.successful(())
+    }
   }
 
   private def shutdown() = Await.result(Http().shutdownAllConnectionPools().flatMap(_ => system.terminate()), 10.minutes)
