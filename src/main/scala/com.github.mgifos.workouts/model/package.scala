@@ -15,12 +15,12 @@ package object model {
     def withPaceUOM(paceUom: String): DistVal = paceUom match {
       case "mpk" => km
       case "mpm" => mi
-      case _ => throw new IllegalArgumentException(s"No such pace unit of measurement: '$paceUom'")
+      case _     => throw new IllegalArgumentException(s"No such pace unit of measurement: '$paceUom'")
     }
     def withSpeedUOM(speedUom: String): DistVal = speedUom match {
       case "kph" => km
       case "mph" => mi
-      case _ => throw new IllegalArgumentException(s"No such speed unit of measurement: '$speedUom'")
+      case _     => throw new IllegalArgumentException(s"No such speed unit of measurement: '$speedUom'")
     }
   }
 

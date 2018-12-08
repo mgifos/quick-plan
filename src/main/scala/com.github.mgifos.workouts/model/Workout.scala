@@ -1,6 +1,6 @@
 package com.github.mgifos.workouts.model
 
-import play.api.libs.json.{ JsValue, Json }
+import play.api.libs.json.{JsValue, Json}
 import Workout._
 
 trait Workout {
@@ -11,18 +11,17 @@ trait Workout {
 case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) extends Workout {
   def toRef: WorkoutRef = WorkoutRef(name)
   def withStep(step: Step): WorkoutDef = WorkoutDef(sport, name, steps :+ step)
-  override def json(): JsValue = Json.obj(
-    "sportType" -> Json.obj(
-      "sportTypeId" -> sportId(sport),
-      "sportTypeKey" -> sportTypeKey(sport)),
-    "workoutName" -> name,
-    "workoutSegments" -> Json.arr(
-      Json.obj(
-        "segmentOrder" -> 1,
-        "sportType" -> Json.obj(
-          "sportTypeId" -> sportId(sport),
-          "sportTypeKey" -> sport),
-        "workoutSteps" -> steps.zipWithIndex.map { case (s, i) => s.json(i + 1) })))
+  override def json(): JsValue =
+    Json.obj(
+      "sportType" -> Json.obj("sportTypeId" -> sportId(sport), "sportTypeKey" -> sportTypeKey(sport)),
+      "workoutName" -> name,
+      "workoutSegments" -> Json.arr(
+        Json.obj(
+          "segmentOrder" -> 1,
+          "sportType" -> Json.obj("sportTypeId" -> sportId(sport), "sportTypeKey" -> sport),
+          "workoutSteps" -> steps.zipWithIndex.map { case (s, i) => s.json(i + 1) }
+        ))
+    )
 }
 
 case class WorkoutDefFailure(`type`: String, original: String, cause: String) extends Workout {
@@ -60,20 +59,20 @@ object Workout {
     }
     text match {
       case WorkoutHeader(sport, name, steps, _) => loop(WorkoutDef(sport, name), steps.trim)
-      case PossibleWorkoutHeader(t, _, cause) => WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
-      case _ => WorkoutNote(text)
+      case PossibleWorkoutHeader(t, _, cause)   => WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
+      case _                                    => WorkoutNote(text)
     }
   }
 
   def sportId(sport: String) = sport match {
     case "running" => 1
     case "cycling" => 2
-    case "custom" => 3
-    case _ => throw new IllegalArgumentException("Only running, cycling and 'custom' workouts are supported.")
+    case "custom"  => 3
+    case _         => throw new IllegalArgumentException("Only running, cycling and 'custom' workouts are supported.")
   }
 
   def sportTypeKey(sport: String) = sport match {
     case "custom" => "other"
-    case _ => sport
+    case _        => sport
   }
 }
