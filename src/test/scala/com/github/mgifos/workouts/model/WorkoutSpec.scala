@@ -1,7 +1,7 @@
 package com.github.mgifos.workouts.model
 
 import com.github.mgifos.workouts.model.DistanceUnits._
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json.Json
 
 class WorkoutSpec extends WordSpec with Matchers {
@@ -28,12 +28,21 @@ class WorkoutSpec extends WordSpec with Matchers {
     }
 
     "parse a workout definition correctly" in {
-      Workout.parse(testWO) shouldBe WorkoutDef("running", "run-fast", Seq(
-        WarmupStep(TimeDuration(minutes = 10)),
-        RepeatStep(2, Seq(
-          IntervalStep(DistanceDuration(1500, m), Some(PaceTarget(Pace(msys.distance, "4:30"), Pace(msys.distance, "5:00")))),
-          RecoverStep(TimeDuration(1, 30), Some(HrZoneTarget(2))))),
-        CooldownStep(LapButtonPressed)))
+      Workout.parse(testWO) shouldBe WorkoutDef(
+        "running",
+        "run-fast",
+        Seq(
+          WarmupStep(TimeDuration(minutes = 10)),
+          RepeatStep(
+            2,
+            Seq(
+              IntervalStep(DistanceDuration(1500, m), Some(PaceTarget(Pace(msys.distance, "4:30"), Pace(msys.distance, "5:00")))),
+              RecoverStep(TimeDuration(1, 30), Some(HrZoneTarget(2)))
+            )
+          ),
+          CooldownStep(LapButtonPressed)
+        )
+      )
     }
 
     "parse various printable workout-names correctly" in {
@@ -49,10 +58,15 @@ class WorkoutSpec extends WordSpec with Matchers {
 
     "parse cycling workouts" in {
       val testBike = "cycling: cycle-test\r\n- warmup: 5:00\n- bike: 20km @ 20.0-100kph\r- cooldown: lap-button"
-      Workout.parse(testBike) shouldBe WorkoutDef("cycling", "cycle-test", Seq(
-        WarmupStep(TimeDuration(minutes = 5)),
-        IntervalStep(DistanceDuration(20, km), Some(SpeedTarget(Speed(km, "20.0"), Speed(km, "100")))),
-        CooldownStep(LapButtonPressed)))
+      Workout.parse(testBike) shouldBe WorkoutDef(
+        "cycling",
+        "cycle-test",
+        Seq(
+          WarmupStep(TimeDuration(minutes = 5)),
+          IntervalStep(DistanceDuration(20, km), Some(SpeedTarget(Speed(km, "20.0"), Speed(km, "100")))),
+          CooldownStep(LapButtonPressed)
+        )
+      )
     }
 
     "validate on a workout definition level" in {
@@ -74,6 +88,28 @@ class WorkoutSpec extends WordSpec with Matchers {
       Workout.parse("running: run\n- run: 10km @ 20x") should matchPattern {
         case WorkoutStepFailure(_, "'20x' is not a valid target specification") =>
       }
+    }
+
+    "parse nested repeats" in {
+      val testNested =
+        "running: nested repeats\n- warmup: 20:00\n- repeat: 2\n  - repeat: 4\n    - run: 0.6km @ 4:25-4:15\n    - recover: 1:00\n  - recover: 05:00\n- cooldown: lap-button"
+      Workout.parse(testNested) shouldBe WorkoutDef(
+        "running",
+        "nested repeats",
+        Seq(
+          WarmupStep(TimeDuration(20)),
+          RepeatStep(
+            count = 2,
+            Seq(
+              RepeatStep(count = 4,
+                         Seq(IntervalStep(DistanceDuration(0.6f, km), Some(PaceTarget(Pace(km, "4:25"), Pace(km, "4:15")))),
+                             RecoverStep(TimeDuration(1, 0)))),
+              RecoverStep(TimeDuration(5, 0))
+            )
+          ),
+          CooldownStep(LapButtonPressed)
+        )
+      )
     }
   }
 
