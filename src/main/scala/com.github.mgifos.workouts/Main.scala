@@ -24,6 +24,7 @@ case class Config(mode: Option[Modes.Mode] = None,
                   system: MeasurementSystems.MeasurementSystem = MeasurementSystems.metric,
                   csv: String = "",
                   delete: Boolean = false,
+                  autoCooldown: Boolean = false,
                   email: String = "",
                   password: String = "",
                   start: LocalDate = LocalDate.MIN,
@@ -66,6 +67,10 @@ object Main extends App {
       .action((_, c) => c.copy(delete = true))
       .text("Delete all existing workouts with same names as the ones contained within the file. In case of import/schedule commands, " +
         "this will be done before the actual action.")
+
+    opt[Unit]('c', "auto-cooldown")
+      .action((_, c) => c.copy(autoCooldown = true))
+      .text("Add automatically cooldown: lap-button as an additional last step of each workout definition.")
 
     help("help").text("prints this usage text")
 
@@ -185,7 +190,12 @@ object Main extends App {
         Future.successful(None)
     }
 
-    val workouts = plan.workouts.toIndexedSeq
+    def transformWorkouts(workouts: Seq[WorkoutDef]): Seq[WorkoutDef] = {
+      if (config.autoCooldown) workouts.map(w => w.copy(steps = w.steps :+ CooldownStep(LapButtonPressed)))
+      else workouts
+    }
+
+    val workouts = transformWorkouts(plan.workouts.toIndexedSeq)
 
     garmin.login().flatMap {
       case Right(s) =>

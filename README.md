@@ -48,6 +48,7 @@ Usage: quick-plan [import|schedule] [options] <file>
   -m, --measurement_system <value>
                            "metric" (default) or "imperial" (miles, inches, ...) measurement system choice.
   -x, --delete             Delete all existing workouts with same names as the ones that are going to be imported.
+  -c, --auto-cooldown      Add automatically cooldown: lap-button as an additional last step of each workout definition.
   --help                   prints this usage text
 
   <file>                   File with a weekly based plan in CSV format
