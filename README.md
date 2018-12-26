@@ -93,13 +93,17 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 
 **`<time-duration>`** := `<minutes>:<seconds>`
 
-**`<target>`** := `<zone-target> | <pace-target> | <hr-target>`
+**`<target>`** := `<zone-target> | <pace-target> | <hr-target> | <speed-target> | <power-target> | <cadence-target>`
 
 **`<zone-target>`** := `z[1-6]`
 
 **`<pace-target>`** := `<pace> - <pace> (mpk | mpm)?`
 
 **`<hr-target>`** := `\d{1,3} - \d{1,3} bpm`
+
+**`<power-target>`** := `\d{1,3} - \d{1,3} W`
+
+**`<cadence-target>`** := `\d{1,3} - \d{1,3} rpm`
 
 **`<speed-target>`** := `<kph-speed> - <kph-speed> (kph | mph)?`
 
