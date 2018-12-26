@@ -1,7 +1,7 @@
 package com.github.mgifos.workouts
 
 import com.github.mgifos.workouts.model._
-import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.{FlatSpec, Matchers}
 
 class WeekPlanSpec extends FlatSpec with Matchers {
 

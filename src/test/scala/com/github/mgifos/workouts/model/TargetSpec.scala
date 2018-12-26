@@ -1,8 +1,8 @@
 package com.github.mgifos.workouts.model
 
-import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.{FlatSpec, Matchers}
 import com.github.mgifos.workouts.model.DistanceUnits._
-import play.api.libs.json.{ JsNull, Json }
+import play.api.libs.json.{JsNull, Json}
 
 class TargetSpec extends FlatSpec with Matchers {
 
@@ -35,36 +35,36 @@ class TargetSpec extends FlatSpec with Matchers {
   "Target" should "handle custom HR specification correctly" in {
     val hrcTarget = Target.parse("130-150 bpm").asInstanceOf[HrCustomTarget]
     hrcTarget should be(HrCustomTarget(130, 150))
-    hrcTarget.json should be(Json.obj(
-      "targetType" -> Json.obj(
-        "workoutTargetTypeId" -> 4,
-        "workoutTargetTypeKey" -> "heart.rate.zone"),
-      "targetValueOne" -> 130,
-      "targetValueTwo" -> 150,
-      "zoneNumber" -> JsNull))
+    hrcTarget.json should be(
+      Json.obj(
+        "targetType" -> Json.obj("workoutTargetTypeId" -> 4, "workoutTargetTypeKey" -> "heart.rate.zone"),
+        "targetValueOne" -> 130,
+        "targetValueTwo" -> 150,
+        "zoneNumber" -> JsNull
+      ))
   }
 
   "Target" should "handle custom POWER specification correctly" in {
     val powTarget = Target.parse("230-250 W").asInstanceOf[PowerCustomTarget]
     powTarget should be(PowerCustomTarget(230, 250))
-    powTarget.json should be(Json.obj(
-      "targetType" -> Json.obj(
-        "workoutTargetTypeId" -> 2,
-        "workoutTargetTypeKey" -> "power.zone"),
-      "targetValueOne" -> 230,
-      "targetValueTwo" -> 250,
-      "zoneNumber" -> JsNull))
+    powTarget.json should be(
+      Json.obj(
+        "targetType" -> Json.obj("workoutTargetTypeId" -> 2, "workoutTargetTypeKey" -> "power.zone"),
+        "targetValueOne" -> 230,
+        "targetValueTwo" -> 250,
+        "zoneNumber" -> JsNull
+      ))
   }
-  
+
   "Target" should "handle custom CADENCE specification correctly" in {
     val cadenceTarget = Target.parse("80-90 rpm").asInstanceOf[CadenceCustomTarget]
     cadenceTarget should be(CadenceCustomTarget(80, 90))
-    cadenceTarget.json should be(Json.obj(
-      "targetType" -> Json.obj(
-        "workoutTargetTypeId" -> 3,
-        "workoutTargetTypeKey" -> "cadence.zone"),
-      "targetValueOne" -> 80,
-      "targetValueTwo" -> 90,
-      "zoneNumber" -> JsNull))
+    cadenceTarget.json should be(
+      Json.obj(
+        "targetType" -> Json.obj("workoutTargetTypeId" -> 3, "workoutTargetTypeKey" -> "cadence.zone"),
+        "targetValueOne" -> 80,
+        "targetValueTwo" -> 90,
+        "zoneNumber" -> JsNull
+      ))
   }
 }

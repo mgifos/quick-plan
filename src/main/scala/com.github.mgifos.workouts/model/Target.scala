@@ -104,9 +104,9 @@ object Target {
 
   def parse(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Target = x.trim match {
     case CadenceCustomRx(from, to) => CadenceCustomTarget(from.toInt, to.toInt)
-    case HrZoneRx(zone)       => HrZoneTarget(zone.toInt)
-    case HrCustomRx(from, to) => HrCustomTarget(from.toInt, to.toInt)
-    case PowerCustomRx(from, to) => PowerCustomTarget(from.toInt, to.toInt)
+    case HrZoneRx(zone)            => HrZoneTarget(zone.toInt)
+    case HrCustomRx(from, to)      => HrCustomTarget(from.toInt, to.toInt)
+    case PowerCustomRx(from, to)   => PowerCustomTarget(from.toInt, to.toInt)
     case SpeedRangeRx(from, _, to, _, uom) =>
       val du = Option(uom).fold(msys.distance)(DistanceUnits.withSpeedUOM)
       SpeedTarget(Speed(du, from), Speed(du, to))

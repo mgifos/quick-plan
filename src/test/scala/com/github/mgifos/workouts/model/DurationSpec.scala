@@ -1,6 +1,6 @@
 package com.github.mgifos.workouts.model
 
-import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.{FlatSpec, Matchers}
 import com.github.mgifos.workouts.model.DistanceUnits._
 
 class DurationSpec extends FlatSpec with Matchers {
