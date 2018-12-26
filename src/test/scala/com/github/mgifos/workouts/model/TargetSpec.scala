@@ -43,4 +43,28 @@ class TargetSpec extends FlatSpec with Matchers {
       "targetValueTwo" -> 150,
       "zoneNumber" -> JsNull))
   }
+
+  "Target" should "handle custom POWER specification correctly" in {
+    val powTarget = Target.parse("230-250 W").asInstanceOf[PowerCustomTarget]
+    powTarget should be(PowerCustomTarget(230, 250))
+    powTarget.json should be(Json.obj(
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> 2,
+        "workoutTargetTypeKey" -> "power.zone"),
+      "targetValueOne" -> 230,
+      "targetValueTwo" -> 250,
+      "zoneNumber" -> JsNull))
+  }
+  
+  "Target" should "handle custom CADENCE specification correctly" in {
+    val cadenceTarget = Target.parse("80-90 rpm").asInstanceOf[CadenceCustomTarget]
+    cadenceTarget should be(CadenceCustomTarget(80, 90))
+    cadenceTarget.json should be(Json.obj(
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> 3,
+        "workoutTargetTypeKey" -> "cadence.zone"),
+      "targetValueOne" -> 80,
+      "targetValueTwo" -> 90,
+      "zoneNumber" -> JsNull))
+  }
 }
