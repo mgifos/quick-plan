@@ -41,9 +41,9 @@ case class WorkoutNote(note: String) extends Workout
 object Workout {
 
   private val WorkoutType = "(running|cycling|custom)"
-  private val WorkoutHeader = raw"""^$WorkoutType:\s([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$$""".r
+  private val WorkoutHeader = raw"""^$WorkoutType?:\s*([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*))(([\s].*)*)$""".r
-  private val PossibleWorkoutHeader = raw"""^\s*$WorkoutType\s*:\s*.*(([\r\n]+\s*.*)*)$$""".r
+  private val PossibleWorkoutHeader = raw"""^\s*$WorkoutType?\s*:\s*.*(([\r\n]+\s*.*)*)$$""".r
 
   def parse(text: String)(implicit msys: MeasurementSystems.MeasurementSystem): Workout = {
     def loop(w: WorkoutDef, steps: String): Workout = steps match {
@@ -58,10 +58,17 @@ object Workout {
       case _ => WorkoutStepFailure(text, steps.trim)
     }
     text match {
+      case WorkoutHeader(null, name, steps, _)  => loop(WorkoutDef(detectSport(steps), name), steps.trim)
       case WorkoutHeader(sport, name, steps, _) => loop(WorkoutDef(sport, name), steps.trim)
       case PossibleWorkoutHeader(t, _, cause)   => WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
       case _                                    => WorkoutNote(text)
     }
+  }
+
+  def detectSport(steps: String): String = steps match {
+    case x if x.contains("- run")  => "running"
+    case x if x.contains("- bike") => "cycling"
+    case _                         => "custom"
   }
 
   def sportId(sport: String) = sport match {

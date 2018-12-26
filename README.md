@@ -71,21 +71,19 @@ quick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-
 ## Workout notation
 The reserved keywords of the notation are: workout, warmup, cooldown, run, bike, go, repeat, recover and lap-button.
 
-**`<workout>`** := `<header><step>+`
+**`<workout>`** := `<header>(<newline><step>)+`
 
-**`<header>`** := `<sport>: <name>`
-
-**`<sport>`** := (running | cycling | custom)
+**`<header>`** := `[running | cycling | custom]: <name>`
 
 **`<name>`** := `[\u0020-\u007F]+` (printable ascii characters)
 
-**`<step>`** := `<newline>- <step-def>`
+**`<step>`** := `<indent>- <step-def>`
 
 **`<step-def>`** := `<simple-step> | <repetition-step>`
 
 **`<simple-step>`** := `(warmup | cooldown | run | bike | go | recover): <duration> [@ <target>]`
 
-**`<repetition-step>`** := `repeat: <count>(<newline>  - <simple-step>)+`
+**`<repetition-step>`** := `repeat: <count>(<newline><step>)+` (with each r. step, depth is increased by 1 - check `<indent>`)
 
 **`<duration>`** := `<distance-duration> | <time-duration> | lap-button`
 
@@ -116,6 +114,9 @@ The reserved keywords of the notation are: workout, warmup, cooldown, run, bike,
 **`<seconds>`** := `\d{2}`
 
 **`<newline>`** := `[\r\n]`
+
+**`<indent>`** := `\s{depth * 2}` (depends on depth parameter related to the repetion step / starts from 0)
+
 
 ## Unit of measurements (metric vs imperial)
 

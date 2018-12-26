@@ -18,7 +18,7 @@ class WorkoutSpec extends WordSpec with Matchers {
    */
   val testWO = "running: run-fast\n- warmup: 10:00\n- repeat: 2\n  - run: 1500m @ 4:30-5:00\n  - recover: 01:30 @ z2\n- cooldown: lap-button"
 
-  "Workout parser should" should {
+  "Workout parser" should {
 
     "parse notes correctly" in {
       Workout.parse("") shouldBe a[WorkoutNote]
@@ -110,6 +110,11 @@ class WorkoutSpec extends WordSpec with Matchers {
           CooldownStep(LapButtonPressed)
         )
       )
+    }
+
+    "be able to detect workout type automatically" in {
+      val test = Seq("run", "bike", "go").map(step => s": detect\n- $step: 2km")
+      test.map(Workout.parse(_).asInstanceOf[WorkoutDef].sport) shouldBe Seq("running", "cycling", "custom")
     }
   }
 
