@@ -55,7 +55,7 @@ Usage: quick-plan [import|schedule] [options] <file>
 
 
 Command: import
-Imports all workout definitions from CSV file. If it's omitted, it is will be on by default.
+Imports all workout definitions from CSV file.
 Command: schedule [options]
 Schedules your weekly plan defined in CSV in Garmin Connect calendar, starting from the first day of first week or ending on the last day of the last week. Either start or end date must be entered so the scheduling can be done properly. In case both are entered, start date has priority. All dates have to be entered in ISO date format e.g. '2018-03-24'.
 
@@ -64,9 +64,15 @@ Schedules your weekly plan defined in CSV in Garmin Connect calendar, starting f
 
 EXAMPLES
 
-Schedules ultra 80k plan targeting 28-4-2018 for a race day
+#Imports all the workouts from ultra 80k plan
+quick-plan import -e your-mail-address@example.com ultra-80k-runnersworld.csv
 
+#Deletes all the workouts from ultra 80k plan
+quick-plan -x your-mail-address@example.com ultra-80k-runnersworld.csv
+
+#Schedules ultra 80k plan targeting 28-4-2018 for a race day, while previously deleting if any with the same name already exists
 quick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv
+
 ```
 
 ## Workout notation

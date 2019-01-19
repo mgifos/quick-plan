@@ -104,8 +104,10 @@ object Main extends App {
       )
 
     note("EXAMPLES").text(
-      "EXAMPLES\n\nSchedules ultra 80k plan targeting 28-4-2018 for a race day (also deletes existing workouts with the same names)" +
-        "\n\nquick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv")
+      "EXAMPLES\n\n" +
+        "#Imports all the workouts from ultra 80k plan\nquick-plan import -e your-mail-address@example.com ultra-80k-runnersworld.csv" +
+        "\n\n#Deletes all the workouts from ultra 80k plan\nquick-plan -x your-mail-address@example.com ultra-80k-runnersworld.csv" +
+        "\n\n#Schedules ultra 80k plan targeting 28-4-2018 for a race day, while previously deleting if any with the same name already exists\nquick-plan schedule -n 2018-04-29 -x -e your-mail-address@example.com ultra-80k-runnersworld.csv")
 
     note("")
 
