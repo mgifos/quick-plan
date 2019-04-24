@@ -258,9 +258,9 @@ class GarminConnect(email: String, password: String)(implicit system: ActorSyste
           .singleRequest(
             HttpRequest(
               POST,
-              Uri("https://sso.garmin.com/sso/login").withQuery(Query(params)),
+              Uri("https://sso.garmin.com/sso/signin").withQuery(Query(params)),
               entity = FormData(Map("username" -> email, "password" -> password, "embed" -> "false")).toEntity
-            ).withHeaders(extractCookies(res1)))
+            ).withHeaders(extractCookies(res1)).withHeaders(Origin("https://sso.garmin.com")))
           .withoutBody
         sessionCookies <- redirectionLoop(0, "https://connect.garmin.com/modern", extractCookies(res2))
       } yield GarminSession(sessionCookies)
