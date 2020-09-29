@@ -1,3 +1,7 @@
+## NOTICE ##
+
+This software is not currently functional due to a change in Garmins API. Details here: https://github.com/mgifos/quick-plan/issues/56
+
 # Quick plan
 is a command line tool to define, import, schedule and share GarminConnect workouts i.e. weekly based training plans.
 
