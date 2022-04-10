@@ -9,7 +9,7 @@ lazy val root = (project in file(".")).enablePlugins(
 
 mainClass in Compile := Some("com.github.mgifos.workouts.Main")
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.15"
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
