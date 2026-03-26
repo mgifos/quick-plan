@@ -1,26 +1,26 @@
 package com.github.mgifos.workouts.model
 
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+import io.circe.Json
 
 trait Step {
   def `type`: String
   def typeId: Int
-  def json(order: Int): JsValue
+  def json(order: Int): Json
 }
 
 abstract class DurationStep(override val `type`: String, override val typeId: Int) extends Step {
   def duration: Duration
   def target: Option[Target]
 
-  def json(order: Int): JsObject =
+  def json(order: Int): Json =
     Json.obj(
-      "type" -> "ExecutableStepDTO",
-      "stepId" -> JsNull,
-      "stepOrder" -> order,
-      "childStepId" -> JsNull,
-      "description" -> JsNull,
-      "stepType" -> Json.obj("stepTypeId" -> typeId, "stepTypeKey" -> `type`)
-    ) ++ duration.json ++ target.fold(NoTarget.json)(_.json)
+      "type"        -> Json.fromString("ExecutableStepDTO"),
+      "stepId"      -> Json.Null,
+      "stepOrder"   -> Json.fromInt(order),
+      "childStepId" -> Json.Null,
+      "description" -> Json.Null,
+      "stepType"    -> Json.obj("stepTypeId" -> Json.fromInt(typeId), "stepTypeKey" -> Json.fromString(`type`))
+    ).deepMerge(duration.json).deepMerge(target.fold(NoTarget.json)(_.json))
 }
 
 case class WarmupStep(duration: Duration, target: Option[Target] = None) extends DurationStep("warmup", 1)
@@ -35,16 +35,16 @@ case class RepeatStep(count: Int, steps: Seq[Step]) extends Step {
   override def `type` = "repeat"
   override def typeId = 6
 
-  override def json(order: Int) =
+  override def json(order: Int): Json =
     Json.obj(
-      "stepId" -> JsNull,
-      "stepOrder" -> order,
-      "stepType" -> Json.obj("stepTypeId" -> typeId, "stepTypeKey" -> "repeat"),
-      "numberOfIterations" -> count,
-      "smartRepeat" -> false,
-      "childStepId" -> 1,
-      "workoutSteps" -> steps.zipWithIndex.map { case (s, i) => s.json(i + 1) },
-      "type" -> "RepeatGroupDTO"
+      "stepId"             -> Json.Null,
+      "stepOrder"          -> Json.fromInt(order),
+      "stepType"           -> Json.obj("stepTypeId" -> Json.fromInt(typeId), "stepTypeKey" -> Json.fromString("repeat")),
+      "numberOfIterations" -> Json.fromInt(count),
+      "smartRepeat"        -> Json.fromBoolean(false),
+      "childStepId"        -> Json.fromInt(1),
+      "workoutSteps"       -> Json.fromValues(steps.zipWithIndex.map { case (s, i) => s.json(i + 1) }),
+      "type"               -> Json.fromString("RepeatGroupDTO")
     )
 }
 

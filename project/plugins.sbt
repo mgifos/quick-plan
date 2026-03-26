@@ -1,3 +1,3 @@
-addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.8")
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.6")
-addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
+addSbtPlugin("com.github.sbt"  % "sbt-release"         % "1.4.0")
+addSbtPlugin("com.github.sbt"  % "sbt-native-packager" % "1.10.4")
+addSbtPlugin("org.scalameta"   % "sbt-scalafmt"        % "2.5.2")

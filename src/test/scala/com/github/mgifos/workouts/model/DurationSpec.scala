@@ -1,9 +1,10 @@
 package com.github.mgifos.workouts.model
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import com.github.mgifos.workouts.model.DistanceUnits._
 
-class DurationSpec extends FlatSpec with Matchers {
+class DurationSpec extends AnyFlatSpec with Matchers {
 
   implicit val msys = MeasurementSystems.metric
 

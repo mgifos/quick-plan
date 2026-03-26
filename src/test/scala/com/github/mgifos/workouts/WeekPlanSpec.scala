@@ -1,9 +1,10 @@
 package com.github.mgifos.workouts
 
 import com.github.mgifos.workouts.model._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WeekPlanSpec extends FlatSpec with Matchers {
+class WeekPlanSpec extends AnyFlatSpec with Matchers {
 
   implicit val msys = MeasurementSystems.metric
 
