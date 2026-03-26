@@ -50,7 +50,7 @@ WEEK,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday,Estimated km,,Dura
 - run: 5km @ 5:40-5:30
 - run: 5km @z2
 - cooldown: lap-button",,"running: 3.5-4h run
-- run 225:00
+- run: 225:00
 - cooldown: lap-button",3h run,104.7,,0:45:00,7.5,4.7
 6,,"15k, 6x1.6k @TMP",8k jog,"15k, middle 5k @MP",,3.5-4h run,3h run,104.7,,0:50:00,8.3,5.2
 7,,"running: 15k, 6x1.6k @HMP

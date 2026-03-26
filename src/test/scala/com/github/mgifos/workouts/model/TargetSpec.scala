@@ -1,10 +1,11 @@
 package com.github.mgifos.workouts.model
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import com.github.mgifos.workouts.model.DistanceUnits._
-import play.api.libs.json.{JsNull, Json}
+import io.circe.Json
 
-class TargetSpec extends FlatSpec with Matchers {
+class TargetSpec extends AnyFlatSpec with Matchers {
 
   implicit val msys = MeasurementSystems.metric
 
@@ -37,10 +38,10 @@ class TargetSpec extends FlatSpec with Matchers {
     hrcTarget should be(HrCustomTarget(130, 150))
     hrcTarget.json should be(
       Json.obj(
-        "targetType" -> Json.obj("workoutTargetTypeId" -> 4, "workoutTargetTypeKey" -> "heart.rate.zone"),
-        "targetValueOne" -> 130,
-        "targetValueTwo" -> 150,
-        "zoneNumber" -> JsNull
+        "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(4), "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")),
+        "targetValueOne" -> Json.fromInt(130),
+        "targetValueTwo" -> Json.fromInt(150),
+        "zoneNumber"     -> Json.Null
       ))
   }
 
@@ -49,10 +50,10 @@ class TargetSpec extends FlatSpec with Matchers {
     powTarget should be(PowerCustomTarget(230, 250))
     powTarget.json should be(
       Json.obj(
-        "targetType" -> Json.obj("workoutTargetTypeId" -> 2, "workoutTargetTypeKey" -> "power.zone"),
-        "targetValueOne" -> 230,
-        "targetValueTwo" -> 250,
-        "zoneNumber" -> JsNull
+        "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(2), "workoutTargetTypeKey" -> Json.fromString("power.zone")),
+        "targetValueOne" -> Json.fromInt(230),
+        "targetValueTwo" -> Json.fromInt(250),
+        "zoneNumber"     -> Json.Null
       ))
   }
 
@@ -61,10 +62,10 @@ class TargetSpec extends FlatSpec with Matchers {
     cadenceTarget should be(CadenceCustomTarget(80, 90))
     cadenceTarget.json should be(
       Json.obj(
-        "targetType" -> Json.obj("workoutTargetTypeId" -> 3, "workoutTargetTypeKey" -> "cadence.zone"),
-        "targetValueOne" -> 80,
-        "targetValueTwo" -> 90,
-        "zoneNumber" -> JsNull
+        "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(3), "workoutTargetTypeKey" -> Json.fromString("cadence.zone")),
+        "targetValueOne" -> Json.fromInt(80),
+        "targetValueTwo" -> Json.fromInt(90),
+        "zoneNumber"     -> Json.Null
       ))
   }
 }

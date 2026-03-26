@@ -1,25 +1,25 @@
 package com.github.mgifos.workouts.model
 
-import play.api.libs.json.{JsValue, Json}
+import io.circe.Json
 import Workout._
 
 trait Workout {
-  def json(): JsValue = Json.obj()
+  def json(): Json = Json.obj()
   def valid(): Boolean = true
 }
 
 case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) extends Workout {
   def toRef: WorkoutRef = WorkoutRef(name)
   def withStep(step: Step): WorkoutDef = WorkoutDef(sport, name, steps :+ step)
-  override def json(): JsValue =
+  override def json(): Json =
     Json.obj(
-      "sportType" -> Json.obj("sportTypeId" -> sportId(sport), "sportTypeKey" -> sportTypeKey(sport)),
-      "workoutName" -> name,
+      "sportType" -> Json.obj("sportTypeId" -> Json.fromInt(sportId(sport)), "sportTypeKey" -> Json.fromString(sportTypeKey(sport))),
+      "workoutName" -> Json.fromString(name),
       "workoutSegments" -> Json.arr(
         Json.obj(
-          "segmentOrder" -> 1,
-          "sportType" -> Json.obj("sportTypeId" -> sportId(sport), "sportTypeKey" -> sport),
-          "workoutSteps" -> steps.zipWithIndex.map { case (s, i) => s.json(i + 1) }
+          "segmentOrder" -> Json.fromInt(1),
+          "sportType"    -> Json.obj("sportTypeId" -> Json.fromInt(sportId(sport)), "sportTypeKey" -> Json.fromString(sport)),
+          "workoutSteps" -> Json.fromValues(steps.zipWithIndex.map { case (s, i) => s.json(i + 1) })
         ))
     )
 }

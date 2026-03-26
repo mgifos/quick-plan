@@ -1,10 +1,12 @@
 package com.github.mgifos.workouts.model
 
 import com.github.mgifos.workouts.model.DistanceUnits._
-import org.scalatest.{Matchers, WordSpec}
-import play.api.libs.json.Json
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
+import io.circe.parser.parse
+import scala.io.Source
 
-class WorkoutSpec extends WordSpec with Matchers {
+class WorkoutSpec extends AnyWordSpec with Matchers {
 
   implicit val msys = MeasurementSystems.metric
 
@@ -120,8 +122,9 @@ class WorkoutSpec extends WordSpec with Matchers {
 
   "Workout should" should {
     "dump json correctly" in {
-      val is = getClass.getClassLoader.getResourceAsStream("run-fast.json")
-      val expectJson = Json.parse(is)
+      val raw = Source.fromInputStream(
+        getClass.getClassLoader.getResourceAsStream("run-fast.json"), "UTF-8").mkString
+      val expectJson = parse(raw).getOrElse(fail("Could not parse run-fast.json fixture"))
       Workout.parse(testWO).json() should be(expectJson)
     }
   }
