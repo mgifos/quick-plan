@@ -1,8 +1,8 @@
 package com.github.mgifos.workouts.model
 
-import com.github.tototoshi.csv.CSVReader
-
 import scala.io.Source
+
+import com.github.tototoshi.csv.CSVReader
 
 class WeeklyPlan(csv: Array[Byte])(using msys: MeasurementSystem) {
 

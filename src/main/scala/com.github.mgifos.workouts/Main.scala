@@ -1,14 +1,19 @@
 package com.github.mgifos.workouts
 
-import java.io.{ BufferedReader, InputStreamReader }
-import java.nio.file.{ Files, Paths }
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.LocalDate
 
-import cats.effect.{ ExitCode, IO, IOApp }
-import com.github.mgifos.workouts.model._
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 import com.typesafe.scalalogging.Logger
 import org.http4s.ember.client.EmberClientBuilder
 import scopt.OParser
+
+import com.github.mgifos.workouts.model.*
 
 enum Mode:
   case `import`, schedule
@@ -121,8 +126,9 @@ object Main extends IOApp {
   private def readLine(prompt: String): IO[String] = IO.blocking {
     print(prompt)
     Option(System.console()) match {
-      case Some(c) => c.readLine()
-      case None => new BufferedReader(new InputStreamReader(System.in)).readLine()
+      case Some(c) => Option(c.readLine()).getOrElse("")
+      case None =>
+        Option(new BufferedReader(new InputStreamReader(System.in)).readLine()).getOrElse("")
     }
   }
 
@@ -146,7 +152,7 @@ object Main extends IOApp {
           println("Your plan contains some invalid items.")
           print("Do you want to proceed to Garmin by skipping these items? [Y/n]")
           readLine("").flatMap {
-            case null | "" | "y" | "Y" => proceedToGarmin(config, plan)
+            case "" | "y" | "Y" => proceedToGarmin(config, plan)
             case _ => IO.unit
           }
         }

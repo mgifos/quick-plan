@@ -8,18 +8,20 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-import cats.effect.{ IO, Ref }
+import scala.concurrent.duration.*
+
+import cats.effect.IO
+import cats.effect.Ref
 import cats.effect.std.Mutex
-import cats.syntax.traverse._
-import com.github.mgifos.workouts.model.WorkoutDef
+import cats.syntax.traverse.*
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import io.circe.parser.{ parse => parseJson }
-import org.http4s._
+import io.circe.parser.parse as parseJson
+import org.http4s.*
 import org.http4s.client.Client
 import org.typelevel.ci.CIString
 
-import scala.concurrent.duration._
+import com.github.mgifos.workouts.model.WorkoutDef
 
 case class GarminWorkout(name: String, id: Long)
 

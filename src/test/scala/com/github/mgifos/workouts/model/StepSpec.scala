@@ -1,8 +1,9 @@
 package com.github.mgifos.workouts.model
 
-import com.github.mgifos.workouts.model.DistanceUnit.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import com.github.mgifos.workouts.model.DistanceUnit.*
 
 class StepSpec extends AnyFlatSpec with Matchers {
 

@@ -11,6 +11,11 @@ Compile / mainClass := Some("com.github.mgifos.workouts.Main")
 
 scalaVersion := "3.8.2"
 
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+
+ThisBuild / scalacOptions += "-Wunused:all"
+
 val http4sVersion = "0.23.31"
 val circeVersion  = "0.14.15"
 

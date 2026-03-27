@@ -1,7 +1,8 @@
 package com.github.mgifos.workouts.model
 
 import io.circe.Json
-import Workout._
+
+import Workout.*
 
 trait Workout {
   def json(): Json = Json.obj()
@@ -68,11 +69,10 @@ object Workout {
       case _ => WorkoutStepFailure(text, steps.trim)
     }
     text match {
-      case WorkoutHeader(null, name, steps, _) =>
-        loop(WorkoutDef(detectSport(steps), name), steps.trim)
-      case WorkoutHeader(sport, name, steps, _) => loop(WorkoutDef(sport, name), steps.trim)
+      case WorkoutHeader(sportOrNull, name, steps, _) =>
+        loop(WorkoutDef(Option(sportOrNull).getOrElse(detectSport(steps)), name), steps.trim)
       case PossibleWorkoutHeader(t, _, cause) =>
-        WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
+        WorkoutDefFailure(`type` = t, text, Option(cause).fold("")(_.trim))
       case _ => WorkoutNote(text)
     }
   }

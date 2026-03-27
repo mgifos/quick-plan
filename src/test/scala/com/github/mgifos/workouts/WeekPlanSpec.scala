@@ -1,8 +1,9 @@
 package com.github.mgifos.workouts
 
-import com.github.mgifos.workouts.model._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import com.github.mgifos.workouts.model.*
 
 class WeekPlanSpec extends AnyFlatSpec with Matchers {
 

@@ -1,10 +1,12 @@
 package com.github.mgifos.workouts.model
 
-import com.github.mgifos.workouts.model.DistanceUnit.*
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-import io.circe.parser.parse
 import scala.io.Source
+
+import io.circe.parser.parse
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import com.github.mgifos.workouts.model.DistanceUnit.*
 
 class WorkoutSpec extends AnyWordSpec with Matchers {
 
@@ -56,9 +58,10 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
       val testNames = Seq("abcz", "123 xyw", """abc!/+-@,?*;:_!\"#$%&/()=?*""")
 
       testNames.foreach { testName =>
-        val x = Workout.parse(testWO.replace("run-fast", testName))
-        x shouldBe a[WorkoutDef]
-        x.asInstanceOf[WorkoutDef].name should be(testName)
+        Workout.parse(testWO.replace("run-fast", testName)) match {
+          case w: WorkoutDef => w.name should be(testName)
+          case other => fail(s"Expected WorkoutDef but got: $other")
+        }
       }
     }
 
@@ -131,11 +134,10 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
 
     "be able to detect workout type automatically" in {
       val test = Seq("run", "bike", "go").map(step => s": detect\n- $step: 2km")
-      test.map(Workout.parse(_).asInstanceOf[WorkoutDef].sport) shouldBe Seq(
-        "running",
-        "cycling",
-        "custom"
-      )
+      test.map(Workout.parse(_) match {
+        case w: WorkoutDef => w.sport
+        case other => fail(s"Expected WorkoutDef but got: $other")
+      }) shouldBe Seq("running", "cycling", "custom")
     }
   }
 

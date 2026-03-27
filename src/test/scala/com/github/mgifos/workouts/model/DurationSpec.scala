@@ -2,6 +2,7 @@ package com.github.mgifos.workouts.model
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
 import com.github.mgifos.workouts.model.DistanceUnit.*
 
 class DurationSpec extends AnyFlatSpec with Matchers {

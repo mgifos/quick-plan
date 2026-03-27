@@ -106,7 +106,7 @@ object Step {
               RepeatStep(params.trim.toInt, steps.map(loop(depth + 1)))
             case _ => throw new IllegalArgumentException(s"Cannot parse repeat step $header")
           }
-        case StepRx(header, "", null) => parseDurationStep(header)
+        case StepRx(header, subdef, _) if subdef.isEmpty => parseDurationStep(header)
         case _ => throw new IllegalArgumentException(s"Cannot parse step:$x")
       }
     }
