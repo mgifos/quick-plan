@@ -4,44 +4,46 @@ import io.circe.Json
 
 import Workout.*
 
-trait Workout {
-  def json(): Json = Json.obj()
-  def valid(): Boolean = true
+sealed trait Workout {
+  def json: Json = Json.obj()
+  def valid: Boolean = true
 }
 
 case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) extends Workout {
   def toRef: WorkoutRef = WorkoutRef(name)
   def withStep(step: Step): WorkoutDef = WorkoutDef(sport, name, steps :+ step)
-  override def json(): Json =
+  override def json: Json = {
+    val (id, key) = sportInfo(sport)
     Json.obj(
       "sportType" -> Json.obj(
-        "sportTypeId" -> Json.fromInt(sportId(sport)),
-        "sportTypeKey" -> Json.fromString(sportTypeKey(sport))
+        "sportTypeId" -> Json.fromInt(id),
+        "sportTypeKey" -> Json.fromString(key)
       ),
       "workoutName" -> Json.fromString(name),
       "workoutSegments" -> Json.arr(
         Json.obj(
           "segmentOrder" -> Json.fromInt(1),
           "sportType" -> Json.obj(
-            "sportTypeId" -> Json.fromInt(sportId(sport)),
+            "sportTypeId" -> Json.fromInt(id),
             "sportTypeKey" -> Json.fromString(sport)
           ),
           "workoutSteps" -> Json.fromValues(steps.zipWithIndex.map { case (s, i) => s.json(i + 1) })
         )
       )
     )
+  }
 }
 
 case class WorkoutDefFailure(`type`: String, original: String, cause: String) extends Workout {
   override def toString =
     s"""Possible workout definition that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
-  override def valid(): Boolean = false
+  override def valid: Boolean = false
 }
 
 case class WorkoutStepFailure(original: String, cause: String) extends Workout {
   override def toString =
     s"""Workout steps that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
-  override def valid(): Boolean = false
+  override def valid: Boolean = false
 }
 
 case class WorkoutRef(name: String) extends Workout
@@ -83,7 +85,9 @@ object Workout {
     case _ => "custom"
   }
 
-  def sportId(sport: String) = sport match {
+  def sportInfo(sport: String): (Int, String) = (sportId(sport), sportTypeKey(sport))
+
+  def sportId(sport: String): Int = sport match {
     case "running" => 1
     case "cycling" => 2
     case "custom" => 3
@@ -93,7 +97,7 @@ object Workout {
       )
   }
 
-  def sportTypeKey(sport: String) = sport match {
+  def sportTypeKey(sport: String): String = sport match {
     case "custom" => "other"
     case _ => sport
   }

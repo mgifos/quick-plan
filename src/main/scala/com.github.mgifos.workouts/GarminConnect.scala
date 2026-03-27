@@ -37,6 +37,9 @@ class GarminConnect(
 
   private val log = Logger(getClass)
 
+  private val workoutApiBase = "https://connectapi.garmin.com/workout-service"
+  private val oauthApiBase = "https://connectapi.garmin.com/oauth-service/oauth"
+
   def createWorkouts(
       workouts: List[WorkoutDef]
   )(using session: GarminSession): IO[List[GarminWorkout]] = {
@@ -47,8 +50,8 @@ class GarminConnect(
       .evalMap { workout =>
         val req = Request[IO](
           method = Method.POST,
-          uri = Uri.unsafeFromString("https://connectapi.garmin.com/workout-service/workout")
-        ).withEntity(workout.json().noSpaces)
+          uri = Uri.unsafeFromString(s"$workoutApiBase/workout")
+        ).withEntity(workout.json.noSpaces)
           .withHeaders(
             sessionHeaders(session)
               :+ Header.Raw(CIString("Content-Type"), "application/json")
@@ -86,7 +89,7 @@ class GarminConnect(
         label -> ids.map { id =>
           Request[IO](
             method = Method.DELETE,
-            uri = Uri.unsafeFromString(s"https://connectapi.garmin.com/workout-service/workout/$id")
+            uri = Uri.unsafeFromString(s"$workoutApiBase/workout/$id")
           ).withHeaders(sessionHeaders(session))
         }
       }
@@ -116,8 +119,7 @@ class GarminConnect(
         val body = io.circe.Json.obj("date" -> io.circe.Json.fromString(date.toString))
         val req = Request[IO](
           method = Method.POST,
-          uri =
-            Uri.unsafeFromString(s"https://connectapi.garmin.com/workout-service/schedule/${gw.id}")
+          uri = Uri.unsafeFromString(s"$workoutApiBase/schedule/${gw.id}")
         ).withEntity(body.noSpaces)
           .withHeaders(
             sessionHeaders(session)
@@ -139,9 +141,7 @@ class GarminConnect(
   private def getWorkoutsMap()(using session: GarminSession): IO[Map[String, List[Long]]] = {
     val req = Request[IO](
       method = Method.GET,
-      uri = Uri.unsafeFromString(
-        "https://connectapi.garmin.com/workout-service/workouts?start=1&limit=9999"
-      )
+      uri = Uri.unsafeFromString(s"$workoutApiBase/workouts?start=1&limit=9999")
     ).withHeaders(sessionHeaders(session))
     client.run(req).use { resp =>
       if (resp.status == Status.Ok)
@@ -400,7 +400,7 @@ class GarminConnect(
         }
 
     // Step 5: OAuth1-signed GET → exchange ticket for OAuth1 token
-    val preauthorizedUrl = "https://connectapi.garmin.com/oauth-service/oauth/preauthorized"
+    val preauthorizedUrl = s"$oauthApiBase/preauthorized"
 
     def step5(ticket: String, consumer: OAuthConsumer): IO[(String, String)] = {
       val queryParams = Map(
@@ -450,7 +450,7 @@ class GarminConnect(
     }
 
     // Step 6: OAuth1-signed POST → exchange OAuth1 for OAuth2 Bearer (empty body)
-    val exchangeUrl = "https://connectapi.garmin.com/oauth-service/oauth/exchange/user/2.0"
+    val exchangeUrl = s"$oauthApiBase/exchange/user/2.0"
 
     def step6(
         oauth1Token: String,
@@ -489,12 +489,10 @@ class GarminConnect(
 
     for {
       jar <- step1
-      csrfAndJar <- step2(jar)
-      (csrf, jar2) = csrfAndJar
+      (csrf, jar2) <- step2(jar)
       ticket <- step3(csrf, jar2)
       consumer <- step4
-      oauth1Pair <- step5(ticket, consumer)
-      (tok, sec) = oauth1Pair
+      (tok, sec) <- step5(ticket, consumer)
       session <- step6(tok, sec, consumer)
     } yield session
   }

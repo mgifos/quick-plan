@@ -1,16 +1,17 @@
 package com.github.mgifos.workouts.model
 
 import scala.io.Source
+import scala.util.Using
 
 import com.github.tototoshi.csv.CSVReader
 
 class WeeklyPlan(csv: Array[Byte])(using msys: MeasurementSystem) {
 
-  type Week = List[String]
+  type WeekRow = List[String]
 
   private lazy val processed: Seq[Option[Workout]] = {
 
-    def weekPlan(week: Week, previousWeeks: Seq[Option[Workout]]): Seq[Option[Workout]] =
+    def weekPlan(week: WeekRow, previousWeeks: Seq[Option[Workout]]): Seq[Option[Workout]] =
       Seq
         .tabulate(7) { weekDayNo =>
           week.lift(weekDayNo + 1).flatMap(text => Option(text.trim).filter(_.nonEmpty))
@@ -25,12 +26,13 @@ class WeeklyPlan(csv: Array[Byte])(using msys: MeasurementSystem) {
           }
         )
 
-    def loop(weeks: List[Week], acc: Seq[Option[Workout]]): Seq[Option[Workout]] = weeks match {
+    def loop(weeks: List[WeekRow], acc: Seq[Option[Workout]]): Seq[Option[Workout]] = weeks match {
       case Nil => acc
       case week :: rest => loop(rest, acc ++ weekPlan(week, acc))
     }
 
-    loop(CSVReader.open(Source.fromBytes(csv)).all().filter(isAValidWeek), Seq())
+    val rows = Using.resource(CSVReader.open(Source.fromBytes(csv)))(_.all())
+    loop(rows.filter(isAValidWeek), Seq())
   }
 
   /**
@@ -50,7 +52,7 @@ class WeeklyPlan(csv: Array[Byte])(using msys: MeasurementSystem) {
   }
 
   def invalid(): Seq[Workout] = processed.collect {
-    case Some(x) if !x.valid() => x
+    case Some(x) if !x.valid => x
   }
 
   private def isAValidWeek(w: Seq[String]) =

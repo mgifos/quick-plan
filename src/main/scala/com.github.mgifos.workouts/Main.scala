@@ -26,8 +26,8 @@ case class Config(
   autoCooldown: Boolean = false,
   email: String = "",
   password: String = "",
-  start: LocalDate = LocalDate.MIN,
-  end: LocalDate = LocalDate.MIN
+  start: Option[LocalDate] = None,
+  end: Option[LocalDate] = None
 )
 
 object Main extends IOApp {
@@ -89,16 +89,13 @@ object Main extends IOApp {
         )
         .children(
           opt[String]('s', "start")
-            .action((x, c) => c.copy(start = LocalDate.parse(x)))
+            .action((x, c) => c.copy(start = Some(LocalDate.parse(x))))
             .text("Date of the first day of the first week of the plan"),
           opt[String]('n', "end")
-            .action((x, c) => c.copy(end = LocalDate.parse(x)))
+            .action((x, c) => c.copy(end = Some(LocalDate.parse(x))))
             .text("Date of the last day of the last week of the plan\n"),
           checkConfig(c =>
-            if (
-              c.mode.contains(Mode.schedule) && c.start.isEqual(LocalDate.MIN) && c.end
-                .isEqual(LocalDate.MIN)
-            )
+            if (c.mode.contains(Mode.schedule) && c.start.isEmpty && c.end.isEmpty)
               failure("Either start or end date must be entered!")
             else success
           )
@@ -184,7 +181,7 @@ object Main extends IOApp {
     def createWorkoutsTask(
         workouts: List[WorkoutDef]
     )(using session: GarminSession): IO[Option[List[GarminWorkout]]] =
-      if (config.mode.exists(List(Mode.`import`, Mode.schedule).contains(_)))
+      if (config.mode.contains(Mode.`import`) || config.mode.contains(Mode.schedule))
         garmin.createWorkouts(workouts).map(Some(_))
       else IO.pure(None)
 
@@ -193,8 +190,9 @@ object Main extends IOApp {
     )(using session: GarminSession): IO[Option[String]] =
       if (config.mode.contains(Mode.schedule)) {
         val start = (config.start, config.end) match {
-          case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get().length - 1)
-          case (from, _) => from
+          case (_, Some(end)) => end.minusDays(plan.get().length - 1)
+          case (Some(from), _) => from
+          case _ => throw new IllegalStateException("unreachable: start or end required (validated in CLI)")
         }
         val woMap: Map[String, GarminWorkout] = workouts.map(ga => ga.name -> ga).toMap
         val spec = plan
@@ -222,7 +220,7 @@ object Main extends IOApp {
           maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
           maybeGarminWorkouts <- createWorkoutsTask(workouts)
           maybeScheduleMessage <- scheduleTask(
-            maybeGarminWorkouts.fold(List.empty[GarminWorkout])(identity)
+            maybeGarminWorkouts.getOrElse(List.empty)
           )
         } yield {
           log.info("\nStatistics:")

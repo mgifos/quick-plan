@@ -147,7 +147,7 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
         .fromInputStream(getClass.getClassLoader.getResourceAsStream("run-fast.json"), "UTF-8")
         .mkString
       val expectJson = parse(raw).getOrElse(fail("Could not parse run-fast.json fixture"))
-      Workout.parse(testWO).json() should be(expectJson)
+      Workout.parse(testWO).json should be(expectJson)
     }
   }
 

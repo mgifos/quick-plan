@@ -2,7 +2,7 @@ package com.github.mgifos.workouts.model
 
 import io.circe.Json
 
-trait Step {
+sealed trait Step {
   def `type`: String
   def typeId: Int
   def json(order: Int): Json
@@ -59,14 +59,25 @@ case class RepeatStep(count: Int, steps: Seq[Step]) extends Step {
 
 object Step {
 
+  // Pre-compile regexes for each indent level (depth 0–4 covers all practical nesting)
+  private val stepRxByIndent: Map[Int, scala.util.matching.Regex] =
+    (0 to 8 by 2).map { indent =>
+      indent -> raw"""^(\s{$indent}-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*)$$""".r
+    }.toMap
+
+  private val stepHeaderByIndent: Map[Int, scala.util.matching.Regex] =
+    (0 to 8 by 2).map { indent =>
+      indent -> raw"""^\s{$indent}-\s*(\w*):(.*)$$""".r
+    }.toMap
+
   def parse(text: String)(using msys: MeasurementSystem): Step = {
 
     def loop(depth: Int)(x: String): Step = {
 
       val indent = depth * 2
 
-      val StepRx = raw"""^(\s{$indent}-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*)$$""".r
-      val StepHeader = raw"""^\s{$indent}-\s*(\w*):(.*)$$""".r
+      val StepRx = stepRxByIndent(indent)
+      val StepHeader = stepHeaderByIndent(indent)
       val ParamsRx = """^([\w-\.:\s]+)\s*(@(.*))?$""".r
 
       def parseDurationStep(x: String)(using msys: MeasurementSystem): DurationStep = x match {
