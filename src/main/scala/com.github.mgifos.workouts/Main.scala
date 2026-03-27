@@ -15,9 +15,11 @@ import scopt.OParser
 
 import com.github.mgifos.workouts.model.*
 
+/** The two top-level commands the CLI supports. */
 enum Mode:
   case `import`, schedule
 
+/** Parsed representation of all command-line arguments and options. */
 case class Config(
   mode: Option[Mode] = None,
   system: MeasurementSystem = MeasurementSystem.metric,
@@ -30,6 +32,10 @@ case class Config(
   end: Option[LocalDate] = None
 )
 
+/**
+ * Entry point for the quick-plan CLI. Parses arguments, reads the CSV plan, and orchestrates
+ * authentication and Garmin Connect API calls via [[GarminAuth]] and [[GarminApi]].
+ */
 object Main extends IOApp {
 
   private val log = Logger(getClass)
@@ -164,25 +170,30 @@ object Main extends IOApp {
         if (config.password.nonEmpty) IO.pure(config.password)
         else readPassword("Password: ")
       _ <- EmberClientBuilder.default[IO].build.use { client =>
-        GarminConnect.make(email, password, client).flatMap { garmin =>
-          syncGarmin(config, plan, garmin)
+        GarminAuth.make(email, password, client).flatMap { auth =>
+          syncGarmin(config, plan, auth, GarminApi(client))
         }
       }
     } yield ()
 
-  private def syncGarmin(config: Config, plan: WeeklyPlan, garmin: GarminConnect): IO[Unit] = {
+  private def syncGarmin(
+      config: Config,
+      plan: WeeklyPlan,
+      auth: GarminAuth,
+      api: GarminApi
+  ): IO[Unit] = {
 
     def deleteWorkoutsTask(
         workouts: List[String]
     )(using session: GarminSession): IO[Option[String]] =
-      if (config.delete) garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
+      if (config.delete) api.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
       else IO.pure(None)
 
     def createWorkoutsTask(
         workouts: List[WorkoutDef]
     )(using session: GarminSession): IO[Option[List[GarminWorkout]]] =
       if (config.mode.contains(Mode.`import`) || config.mode.contains(Mode.schedule))
-        garmin.createWorkouts(workouts).map(Some(_))
+        api.createWorkouts(workouts).map(Some(_))
       else IO.pure(None)
 
     def scheduleTask(
@@ -192,7 +203,8 @@ object Main extends IOApp {
         val start = (config.start, config.end) match {
           case (_, Some(end)) => end.minusDays(plan.get().length - 1)
           case (Some(from), _) => from
-          case _ => throw new IllegalStateException("unreachable: start or end required (validated in CLI)")
+          case _ =>
+            throw new IllegalStateException("unreachable: start or end required (validated in CLI)")
         }
         val woMap: Map[String, GarminWorkout] = workouts.map(ga => ga.name -> ga).toMap
         val spec = plan
@@ -203,7 +215,7 @@ object Main extends IOApp {
               start.plusDays(day) -> woMap(ref.name)
           }
           .toList
-        garmin.schedule(spec).map(c => Some(s"$c scheduled"))
+        api.schedule(spec).map(c => Some(s"$c scheduled"))
       } else IO.pure(None)
 
     def transformWorkouts(workouts: List[WorkoutDef]): List[WorkoutDef] =
@@ -213,7 +225,7 @@ object Main extends IOApp {
 
     val workouts = transformWorkouts(plan.workouts.toList)
 
-    garmin.login().flatMap {
+    auth.login().flatMap {
       case Right(s) =>
         given session: GarminSession = s
         for {
