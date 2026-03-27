@@ -49,3 +49,10 @@ releaseProcess := Seq[ReleaseStep](
 )
 
 makeDeploymentSettings(Universal, Universal / packageBin, "zip")
+
+Global / excludeLintKeys ++= Set(
+  Universal / artifacts,
+  Universal / configuration,
+  Universal / pushRemoteCacheConfiguration / publishMavenStyle,
+  Universal / remoteCachePom / pushRemoteCacheArtifact
+)
