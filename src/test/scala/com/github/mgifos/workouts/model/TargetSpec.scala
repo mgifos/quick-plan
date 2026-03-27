@@ -2,12 +2,12 @@ package com.github.mgifos.workouts.model
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import com.github.mgifos.workouts.model.DistanceUnits._
+import com.github.mgifos.workouts.model.DistanceUnit.*
 import io.circe.Json
 
 class TargetSpec extends AnyFlatSpec with Matchers {
 
-  implicit val msys = MeasurementSystems.metric
+  given msys: MeasurementSystem = MeasurementSystem.metric
 
   "Target" should "parse correctly" in {
 
@@ -28,7 +28,7 @@ class TargetSpec extends AnyFlatSpec with Matchers {
 
     val mpm = Target.parse("4:20-05:30 mpm").asInstanceOf[PaceTarget]
     mpm should be(PaceTarget(Pace(mi, "4:20"), Pace(mi, "05:30")))
-    mpm.from.speed should be(6.189784592848557D)
+    mpm.from.speed should be(6.189784615384616D)
 
     a[IllegalArgumentException] should be thrownBy Target.parse("5:20-04:30 unknownUOM")
   }

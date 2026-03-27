@@ -35,7 +35,7 @@ class GarminConnect(
 
   private val log = Logger(getClass)
 
-  def createWorkouts(workouts: List[WorkoutDef])(implicit session: GarminSession): IO[List[GarminWorkout]] = {
+  def createWorkouts(workouts: List[WorkoutDef])(using session: GarminSession): IO[List[GarminWorkout]] = {
     log.info("\nCreating workouts:")
     Stream
       .emits(workouts)
@@ -69,7 +69,7 @@ class GarminConnect(
       .toList
   }
 
-  def deleteWorkouts(workouts: List[String])(implicit session: GarminSession): IO[Int] =
+  def deleteWorkouts(workouts: List[String])(using session: GarminSession): IO[Int] =
     for {
       wsMap <- getWorkoutsMap()
       _     <- IO(log.info("\nDeleting workouts:"))
@@ -102,7 +102,7 @@ class GarminConnect(
                  .map(_.length)
     } yield count
 
-  def schedule(spec: List[(LocalDate, GarminWorkout)])(implicit session: GarminSession): IO[Int] = {
+  def schedule(spec: List[(LocalDate, GarminWorkout)])(using session: GarminSession): IO[Int] = {
     log.debug(s"  Scheduling spec: ${spec.mkString("\n")}")
     log.info("\nScheduling:")
     Stream
@@ -132,7 +132,7 @@ class GarminConnect(
       .map(_.length)
   }
 
-  private def getWorkoutsMap()(implicit session: GarminSession): IO[Map[String, List[Long]]] = {
+  private def getWorkoutsMap()(using session: GarminSession): IO[Map[String, List[Long]]] = {
     val req = Request[IO](
       method = Method.GET,
       uri = Uri.unsafeFromString(

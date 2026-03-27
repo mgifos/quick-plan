@@ -45,7 +45,7 @@ object Workout {
   private val NextStepRx = """^((-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*))(([\s].*)*)$""".r
   private val PossibleWorkoutHeader = raw"""^\s*$WorkoutType?\s*:\s*.*(([\r\n]+\s*.*)*)$$""".r
 
-  def parse(text: String)(implicit msys: MeasurementSystems.MeasurementSystem): Workout = {
+  def parse(text: String)(using msys: MeasurementSystem): Workout = {
     def loop(w: WorkoutDef, steps: String): Workout = steps match {
       case NextStepRx(next, _, _, _, rest, _) =>
         try {

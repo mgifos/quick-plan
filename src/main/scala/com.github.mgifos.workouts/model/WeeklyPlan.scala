@@ -4,7 +4,7 @@ import com.github.tototoshi.csv.CSVReader
 
 import scala.io.Source
 
-class WeeklyPlan(csv: Array[Byte])(implicit msys: MeasurementSystems.MeasurementSystem) {
+class WeeklyPlan(csv: Array[Byte])(using msys: MeasurementSystem) {
 
   type Week = List[String]
 
@@ -28,7 +28,7 @@ class WeeklyPlan(csv: Array[Byte])(implicit msys: MeasurementSystems.Measurement
       case week :: rest => loop(rest, acc ++ weekPlan(week, acc))
     }
 
-    loop(CSVReader.open(Source.fromBytes(csv)).all.filter(isAValidWeek), Seq())
+    loop(CSVReader.open(Source.fromBytes(csv)).all().filter(isAValidWeek), Seq())
   }
 
   /**

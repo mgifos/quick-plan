@@ -50,7 +50,7 @@ case class RepeatStep(count: Int, steps: Seq[Step]) extends Step {
 
 object Step {
 
-  def parse(text: String)(implicit msys: MeasurementSystems.MeasurementSystem): Step = {
+  def parse(text: String)(using msys: MeasurementSystem): Step = {
 
     def loop(depth: Int)(x: String): Step = {
 
@@ -60,19 +60,19 @@ object Step {
       val StepHeader = raw"""^\s{$indent}-\s*(\w*):(.*)$$""".r
       val ParamsRx = """^([\w-\.:\s]+)\s*(@(.*))?$""".r
 
-      def parseDurationStep(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): DurationStep = x match {
+      def parseDurationStep(x: String)(using msys: MeasurementSystem): DurationStep = x match {
         case StepHeader(name, params) =>
           name match {
-            case "warmup"              => WarmupStep.tupled(expect(params))
-            case "run" | "bike" | "go" => IntervalStep.tupled(expect(params))
-            case "recover"             => RecoverStep.tupled(expect(params))
-            case "cooldown"            => CooldownStep.tupled(expect(params))
+            case "warmup"              => val (d, t) = expect(params); WarmupStep(d, t)
+            case "run" | "bike" | "go" => val (d, t) = expect(params); IntervalStep(d, t)
+            case "recover"             => val (d, t) = expect(params); RecoverStep(d, t)
+            case "cooldown"            => val (d, t) = expect(params); CooldownStep(d, t)
             case _                     => throw new IllegalArgumentException(s"'$name' is not a duration step type")
           }
         case _ => throw new IllegalArgumentException(s"Cannot parse duration step: $x")
       }
 
-      def expect(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): (Duration, Option[Target]) = x.trim match {
+      def expect(x: String)(using msys: MeasurementSystem): (Duration, Option[Target]) = x.trim match {
         case ParamsRx(duration, _, target) =>
           val maybeTarget = Option(target).filter(_.trim.nonEmpty).map(Target.parse)
           (Duration.parse(duration.trim), maybeTarget)

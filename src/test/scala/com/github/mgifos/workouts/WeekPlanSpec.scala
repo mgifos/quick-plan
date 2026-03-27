@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 
 class WeekPlanSpec extends AnyFlatSpec with Matchers {
 
-  implicit val msys = MeasurementSystems.metric
+  given msys: MeasurementSystem = MeasurementSystem.metric
 
   val runFast = "running: run-fast\n- warmup: 10:00\n- repeat: 2\n  - run: 1500m @ 4:30-5:00\n  - recover: 01:30 @ z2\n- cooldown: lap-button"
   val runSlow = "running: run-slow\n- warmup: 10:00\n- run: 5km @ z2\n- cooldown: lap-button"
@@ -14,7 +14,7 @@ class WeekPlanSpec extends AnyFlatSpec with Matchers {
 
   "WeekPlan" should "detect workout definitions and references properly" in {
     val plan = new WeeklyPlan(testPlan.getBytes)
-    plan.get.flatten should have size 7
+    plan.get().flatten should have size 7
     plan.workouts should have size 2
   }
 }

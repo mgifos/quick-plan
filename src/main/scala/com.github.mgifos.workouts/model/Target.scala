@@ -76,7 +76,7 @@ object NoTarget extends Target {
     )
 }
 
-case class Pace(uom: DistanceUnits.DistanceUnit, exp: String) {
+case class Pace(uom: DistanceUnit, exp: String) {
   def minutes: Int = exp.trim.takeWhile(_ != ':').toInt
   def seconds: Int = exp.trim.split(":").last.toInt
 
@@ -86,7 +86,7 @@ case class Pace(uom: DistanceUnits.DistanceUnit, exp: String) {
   def speed: Double = uom.toMeters(1) / (minutes * 60 + seconds)
 }
 
-case class Speed(unit: DistanceUnits.DistanceUnit, exp: String) {
+case class Speed(unit: DistanceUnit, exp: String) {
 
   /**
     * @return Speed in m/s
@@ -102,16 +102,16 @@ object Target {
   private val PowerCustomRx = """^(\d{1,3})\s*-\s*(\d{1,3})\s*W$""".r
   private val SpeedRangeRx = """^(\d{1,3}(\.\d{1})?)\s*-\s*(\d{1,3}(\.\d{1})?)\s*(kph|mph)?""".r
 
-  def parse(x: String)(implicit msys: MeasurementSystems.MeasurementSystem): Target = x.trim match {
+  def parse(x: String)(using msys: MeasurementSystem): Target = x.trim match {
     case CadenceCustomRx(from, to) => CadenceCustomTarget(from.toInt, to.toInt)
     case HrZoneRx(zone)            => HrZoneTarget(zone.toInt)
     case HrCustomRx(from, to)      => HrCustomTarget(from.toInt, to.toInt)
     case PowerCustomRx(from, to)   => PowerCustomTarget(from.toInt, to.toInt)
     case SpeedRangeRx(from, _, to, _, uom) =>
-      val du = Option(uom).fold(msys.distance)(DistanceUnits.withSpeedUOM)
+      val du = Option(uom).fold(msys.distance)(DistanceUnit.withSpeedUOM)
       SpeedTarget(Speed(du, from), Speed(du, to))
     case PaceRangeRx(from, to, uom) =>
-      val du = Option(uom).fold(msys.distance)(DistanceUnits.withPaceUOM)
+      val du = Option(uom).fold(msys.distance)(DistanceUnit.withPaceUOM)
       PaceTarget(Pace(du, from), Pace(du, to))
     case raw => throw new IllegalArgumentException(s"'$raw' is not a valid target specification")
   }

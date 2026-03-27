@@ -10,15 +10,12 @@ import com.typesafe.scalalogging.Logger
 import org.http4s.ember.client.EmberClientBuilder
 import scopt.OParser
 
-object Modes extends Enumeration {
-  type Mode = Value
-  val `import`: Mode = Value("import")
-  val schedule: Mode = Value("schedule")
-}
+enum Mode:
+  case `import`, schedule
 
 case class Config(
-    mode: Option[Modes.Mode] = None,
-    system: MeasurementSystems.MeasurementSystem = MeasurementSystems.metric,
+    mode: Option[Mode] = None,
+    system: MeasurementSystem = MeasurementSystem.metric,
     csv: String = "",
     delete: Boolean = false,
     autoCooldown: Boolean = false,
@@ -32,8 +29,8 @@ object Main extends IOApp {
 
   private val log = Logger(getClass)
 
-  implicit val measurementSystemRead: scopt.Read[MeasurementSystems.MeasurementSystem] =
-    scopt.Read.reads(MeasurementSystems.named)
+  given measurementSystemRead: scopt.Read[MeasurementSystem] =
+    scopt.Read.reads(MeasurementSystem.named)
 
   private val builder = OParser.builder[Config]
 
@@ -48,7 +45,7 @@ object Main extends IOApp {
       opt[String]('p', "password")
         .action((x, c) => c.copy(password = x))
         .text("Password to login to Garmin Connect"),
-      opt[MeasurementSystems.MeasurementSystem]('m', "measurement_system")
+      opt[MeasurementSystem]('m', "measurement_system")
         .action((x, c) => c.copy(system = x))
         .text(""""metric" (default) or "imperial" (miles, inches, ...) measurement system choice."""),
       opt[Unit]('x', "delete")
@@ -68,11 +65,11 @@ object Main extends IOApp {
         .text("File with a weekly based plan in CSV format"),
       note("\n"),
       cmd("import")
-        .action((_, c) => c.copy(mode = Some(Modes.`import`)))
+        .action((_, c) => c.copy(mode = Some(Mode.`import`)))
         .text("Imports all workout definitions from CSV file. If it's omitted, it is will be on by default."),
       note(""),
       cmd("schedule")
-        .action((_, c) => c.copy(mode = Some(Modes.schedule)))
+        .action((_, c) => c.copy(mode = Some(Mode.schedule)))
         .text(
           "Schedules your weekly plan defined in CSV in Garmin Connect calendar, starting from the first day of first week or" +
             " ending on the last day of the last week. Either start or end date must be entered so the scheduling can be done" +
@@ -87,7 +84,7 @@ object Main extends IOApp {
             .action((x, c) => c.copy(end = LocalDate.parse(x)))
             .text("Date of the last day of the last week of the plan\n"),
           checkConfig(c =>
-            if (c.mode.contains(Modes.schedule) && c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN))
+            if (c.mode.contains(Mode.schedule) && c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN))
               failure("Either start or end date must be entered!")
             else success)
         ),
@@ -131,7 +128,7 @@ object Main extends IOApp {
 
   private def execute(config: Config): IO[Unit] =
     for {
-      plan <- IO.blocking(new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))(config.system))
+      plan <- IO.blocking(new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))(using config.system))
       _    <- if (plan.invalid().isEmpty) proceedToGarmin(config, plan)
               else {
                 plan.invalid().foreach(i => log.warn(i.toString))
@@ -159,17 +156,17 @@ object Main extends IOApp {
 
   private def syncGarmin(config: Config, plan: WeeklyPlan, garmin: GarminConnect): IO[Unit] = {
 
-    def deleteWorkoutsTask(workouts: List[String])(implicit session: GarminSession): IO[Option[String]] =
+    def deleteWorkoutsTask(workouts: List[String])(using session: GarminSession): IO[Option[String]] =
       if (config.delete) garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
       else IO.pure(None)
 
-    def createWorkoutsTask(workouts: List[WorkoutDef])(implicit session: GarminSession): IO[Option[List[GarminWorkout]]] =
-      if (config.mode.exists(List(Modes.`import`, Modes.schedule).contains(_)))
+    def createWorkoutsTask(workouts: List[WorkoutDef])(using session: GarminSession): IO[Option[List[GarminWorkout]]] =
+      if (config.mode.exists(List(Mode.`import`, Mode.schedule).contains(_)))
         garmin.createWorkouts(workouts).map(Some(_))
       else IO.pure(None)
 
-    def scheduleTask(workouts: List[GarminWorkout])(implicit session: GarminSession): IO[Option[String]] =
-      if (config.mode.contains(Modes.schedule)) {
+    def scheduleTask(workouts: List[GarminWorkout])(using session: GarminSession): IO[Option[String]] =
+      if (config.mode.contains(Mode.schedule)) {
         val start = (config.start, config.end) match {
           case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get().length - 1)
           case (from, _)                               => from
@@ -194,7 +191,7 @@ object Main extends IOApp {
 
     garmin.login().flatMap {
       case Right(s) =>
-        implicit val session: GarminSession = s
+        given session: GarminSession = s
         for {
           maybeDeleteMessage   <- deleteWorkoutsTask(workouts.map(_.name))
           maybeGarminWorkouts  <- createWorkoutsTask(workouts)

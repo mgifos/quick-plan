@@ -1,6 +1,5 @@
 package com.github.mgifos.workouts.model
 
-import com.github.mgifos.workouts.model.DistanceUnits.DistanceUnit
 import io.circe.Json
 
 sealed trait Duration {
@@ -46,7 +45,7 @@ object Duration {
   private val MinutesRx = """^(\d{1,3}):(\d{2})$""".r
 
   def parse(x: String): Duration = x match {
-    case DistanceRx(quantity, _, uom) => DistanceDuration(quantity.toFloat, DistanceUnits.named(uom))
+    case DistanceRx(quantity, _, uom) => DistanceDuration(quantity.toFloat, DistanceUnit.named(uom))
     case MinutesRx(minutes, seconds)  => TimeDuration(minutes = minutes.toInt, seconds = seconds.toInt)
     case "lap-button"                 => LapButtonPressed
     case _                            => throw new IllegalArgumentException(s"Duration cannot be parsed $x")

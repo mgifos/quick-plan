@@ -2,36 +2,32 @@ package com.github.mgifos.workouts
 
 package object model {
 
-  object DistanceUnits extends Enumeration {
-    type DistanceUnit = DistVal
-    val km = Value("km", "kilometer", _ * 1000F)
-    val mi = Value("mi", "mile", _ * 1609.344F)
-    val m = Value("m", "meter", _ * 1F)
+  enum DistanceUnit(val shortName: String, val fullName: String, val toMeters: Double => Double):
+    case km extends DistanceUnit("km", "kilometer", _ * 1000.0)
+    case mi extends DistanceUnit("mi", "mile",      _ * 1609.344)
+    case m  extends DistanceUnit("m",  "meter",     _ * 1.0)
 
-    class DistVal(name: String, val fullName: String, val toMeters: (Double) => Double) extends Val(nextId, name)
-    protected final def Value(name: String, fullName: String, toMeters: (Double) => Double): DistVal = new DistVal(name, fullName, toMeters)
-
-    def named(name: String): DistVal = withName(name).asInstanceOf[DistVal]
-    def withPaceUOM(paceUom: String): DistVal = paceUom match {
+  object DistanceUnit:
+    def named(name: String): DistanceUnit =
+      DistanceUnit.values
+        .find(_.shortName == name)
+        .getOrElse(throw new NoSuchElementException(s"No distance unit: $name"))
+    def withPaceUOM(paceUom: String): DistanceUnit = paceUom match
       case "mpk" => km
       case "mpm" => mi
       case _     => throw new IllegalArgumentException(s"No such pace unit of measurement: '$paceUom'")
-    }
-    def withSpeedUOM(speedUom: String): DistVal = speedUom match {
+    def withSpeedUOM(speedUom: String): DistanceUnit = speedUom match
       case "kph" => km
       case "mph" => mi
       case _     => throw new IllegalArgumentException(s"No such speed unit of measurement: '$speedUom'")
-    }
-  }
 
-  object MeasurementSystems extends Enumeration {
-    type MeasurementSystem = MSVal
-    val imperial = Value("imperial", DistanceUnits.mi)
-    val metric = Value("metric", DistanceUnits.km)
+  enum MeasurementSystem(val name: String, val distance: DistanceUnit):
+    case imperial extends MeasurementSystem("imperial", DistanceUnit.mi)
+    case metric   extends MeasurementSystem("metric",   DistanceUnit.km)
 
-    class MSVal(name: String, val distance: DistanceUnits.DistanceUnit) extends Val(nextId, name)
-    protected final def Value(name: String, distance: DistanceUnits.DistanceUnit): MSVal = new MSVal(name, distance)
-
-    def named(name: String): MSVal = withName(name).asInstanceOf[MSVal]
-  }
+  object MeasurementSystem:
+    def named(name: String): MeasurementSystem =
+      MeasurementSystem.values
+        .find(_.name == name)
+        .getOrElse(throw new NoSuchElementException(s"No measurement system: $name"))
 }

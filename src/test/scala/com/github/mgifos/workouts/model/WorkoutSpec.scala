@@ -1,6 +1,6 @@
 package com.github.mgifos.workouts.model
 
-import com.github.mgifos.workouts.model.DistanceUnits._
+import com.github.mgifos.workouts.model.DistanceUnit.*
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import io.circe.parser.parse
@@ -8,7 +8,7 @@ import scala.io.Source
 
 class WorkoutSpec extends AnyWordSpec with Matchers {
 
-  implicit val msys = MeasurementSystems.metric
+  given msys: MeasurementSystem = MeasurementSystem.metric
 
   /*
   running: run-fast

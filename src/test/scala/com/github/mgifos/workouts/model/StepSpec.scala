@@ -1,12 +1,12 @@
 package com.github.mgifos.workouts.model
 
-import com.github.mgifos.workouts.model.DistanceUnits._
+import com.github.mgifos.workouts.model.DistanceUnit.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class StepSpec extends AnyFlatSpec with Matchers {
 
-  implicit val msys = MeasurementSystems.metric
+  given msys: MeasurementSystem = MeasurementSystem.metric
 
   "Step" should "parse correctly" in {
 
