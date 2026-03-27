@@ -56,3 +56,5 @@ Global / excludeLintKeys ++= Set(
   Universal / pushRemoteCacheConfiguration / publishMavenStyle,
   Universal / remoteCachePom / pushRemoteCacheArtifact
 )
+
+maintainer := "Nikola Petkov <nikola.petkov@gmail.com>"
