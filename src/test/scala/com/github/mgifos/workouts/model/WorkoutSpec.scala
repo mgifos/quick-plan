@@ -18,7 +18,8 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
     - recover: 01:30 @ z2
   - cooldown: lap-button
    */
-  val testWO = "running: run-fast\n- warmup: 10:00\n- repeat: 2\n  - run: 1500m @ 4:30-5:00\n  - recover: 01:30 @ z2\n- cooldown: lap-button"
+  val testWO =
+    "running: run-fast\n- warmup: 10:00\n- repeat: 2\n  - run: 1500m @ 4:30-5:00\n  - recover: 01:30 @ z2\n- cooldown: lap-button"
 
   "Workout parser" should {
 
@@ -38,7 +39,10 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
           RepeatStep(
             2,
             Seq(
-              IntervalStep(DistanceDuration(1500, m), Some(PaceTarget(Pace(msys.distance, "4:30"), Pace(msys.distance, "5:00")))),
+              IntervalStep(
+                DistanceDuration(1500, m),
+                Some(PaceTarget(Pace(msys.distance, "4:30"), Pace(msys.distance, "5:00")))
+              ),
               RecoverStep(TimeDuration(1, 30), Some(HrZoneTarget(2)))
             )
           ),
@@ -59,13 +63,17 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
     }
 
     "parse cycling workouts" in {
-      val testBike = "cycling: cycle-test\r\n- warmup: 5:00\n- bike: 20km @ 20.0-100kph\r- cooldown: lap-button"
+      val testBike =
+        "cycling: cycle-test\r\n- warmup: 5:00\n- bike: 20km @ 20.0-100kph\r- cooldown: lap-button"
       Workout.parse(testBike) shouldBe WorkoutDef(
         "cycling",
         "cycle-test",
         Seq(
           WarmupStep(TimeDuration(minutes = 5)),
-          IntervalStep(DistanceDuration(20, km), Some(SpeedTarget(Speed(km, "20.0"), Speed(km, "100")))),
+          IntervalStep(
+            DistanceDuration(20, km),
+            Some(SpeedTarget(Speed(km, "20.0"), Speed(km, "100")))
+          ),
           CooldownStep(LapButtonPressed)
         )
       )
@@ -103,9 +111,16 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
           RepeatStep(
             count = 2,
             Seq(
-              RepeatStep(count = 4,
-                         Seq(IntervalStep(DistanceDuration(0.6f, km), Some(PaceTarget(Pace(km, "4:25"), Pace(km, "4:15")))),
-                             RecoverStep(TimeDuration(1, 0)))),
+              RepeatStep(
+                count = 4,
+                Seq(
+                  IntervalStep(
+                    DistanceDuration(0.6f, km),
+                    Some(PaceTarget(Pace(km, "4:25"), Pace(km, "4:15")))
+                  ),
+                  RecoverStep(TimeDuration(1, 0))
+                )
+              ),
               RecoverStep(TimeDuration(5, 0))
             )
           ),
@@ -116,14 +131,19 @@ class WorkoutSpec extends AnyWordSpec with Matchers {
 
     "be able to detect workout type automatically" in {
       val test = Seq("run", "bike", "go").map(step => s": detect\n- $step: 2km")
-      test.map(Workout.parse(_).asInstanceOf[WorkoutDef].sport) shouldBe Seq("running", "cycling", "custom")
+      test.map(Workout.parse(_).asInstanceOf[WorkoutDef].sport) shouldBe Seq(
+        "running",
+        "cycling",
+        "custom"
+      )
     }
   }
 
   "Workout should" should {
     "dump json correctly" in {
-      val raw = Source.fromInputStream(
-        getClass.getClassLoader.getResourceAsStream("run-fast.json"), "UTF-8").mkString
+      val raw = Source
+        .fromInputStream(getClass.getClassLoader.getResourceAsStream("run-fast.json"), "UTF-8")
+        .mkString
       val expectJson = parse(raw).getOrElse(fail("Could not parse run-fast.json fixture"))
       Workout.parse(testWO).json() should be(expectJson)
     }

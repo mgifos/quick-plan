@@ -1,10 +1,10 @@
 package com.github.mgifos.workouts
 
-import java.io.{BufferedReader, InputStreamReader}
-import java.nio.file.{Files, Paths}
+import java.io.{ BufferedReader, InputStreamReader }
+import java.nio.file.{ Files, Paths }
 import java.time.LocalDate
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{ ExitCode, IO, IOApp }
 import com.github.mgifos.workouts.model._
 import com.typesafe.scalalogging.Logger
 import org.http4s.ember.client.EmberClientBuilder
@@ -14,15 +14,15 @@ enum Mode:
   case `import`, schedule
 
 case class Config(
-    mode: Option[Mode] = None,
-    system: MeasurementSystem = MeasurementSystem.metric,
-    csv: String = "",
-    delete: Boolean = false,
-    autoCooldown: Boolean = false,
-    email: String = "",
-    password: String = "",
-    start: LocalDate = LocalDate.MIN,
-    end: LocalDate = LocalDate.MIN
+  mode: Option[Mode] = None,
+  system: MeasurementSystem = MeasurementSystem.metric,
+  csv: String = "",
+  delete: Boolean = false,
+  autoCooldown: Boolean = false,
+  email: String = "",
+  password: String = "",
+  start: LocalDate = LocalDate.MIN,
+  end: LocalDate = LocalDate.MIN
 )
 
 object Main extends IOApp {
@@ -47,7 +47,9 @@ object Main extends IOApp {
         .text("Password to login to Garmin Connect"),
       opt[MeasurementSystem]('m', "measurement_system")
         .action((x, c) => c.copy(system = x))
-        .text(""""metric" (default) or "imperial" (miles, inches, ...) measurement system choice."""),
+        .text(
+          """"metric" (default) or "imperial" (miles, inches, ...) measurement system choice."""
+        ),
       opt[Unit]('x', "delete")
         .action((_, c) => c.copy(delete = true))
         .text(
@@ -56,7 +58,9 @@ object Main extends IOApp {
         ),
       opt[Unit]('c', "auto-cooldown")
         .action((_, c) => c.copy(autoCooldown = true))
-        .text("Add automatically cooldown: lap-button as an additional last step of each workout definition."),
+        .text(
+          "Add automatically cooldown: lap-button as an additional last step of each workout definition."
+        ),
       help("help").text("prints this usage text"),
       note(""),
       arg[String]("<file>")
@@ -66,7 +70,9 @@ object Main extends IOApp {
       note("\n"),
       cmd("import")
         .action((_, c) => c.copy(mode = Some(Mode.`import`)))
-        .text("Imports all workout definitions from CSV file. If it's omitted, it is will be on by default."),
+        .text(
+          "Imports all workout definitions from CSV file. If it's omitted, it is will be on by default."
+        ),
       note(""),
       cmd("schedule")
         .action((_, c) => c.copy(mode = Some(Mode.schedule)))
@@ -84,9 +90,13 @@ object Main extends IOApp {
             .action((x, c) => c.copy(end = LocalDate.parse(x)))
             .text("Date of the last day of the last week of the plan\n"),
           checkConfig(c =>
-            if (c.mode.contains(Mode.schedule) && c.start.isEqual(LocalDate.MIN) && c.end.isEqual(LocalDate.MIN))
+            if (
+              c.mode.contains(Mode.schedule) && c.start.isEqual(LocalDate.MIN) && c.end
+                .isEqual(LocalDate.MIN)
+            )
               failure("Either start or end date must be entered!")
-            else success)
+            else success
+          )
         ),
       note("EXAMPLES").text(
         "EXAMPLES\n\n" +
@@ -101,12 +111,10 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     OParser.parse(parser, args, Config()) match {
       case Some(config) =>
-        execute(config)
-          .as(ExitCode.Success)
-          .handleError { ex =>
-            log.error(s"Error: ${ex.getMessage}")
-            ExitCode.Error
-          }
+        execute(config).as(ExitCode.Success).handleError { ex =>
+          log.error(s"Error: ${ex.getMessage}")
+          ExitCode.Error
+        }
       case None => IO.pure(ExitCode.Error)
     }
 
@@ -114,7 +122,7 @@ object Main extends IOApp {
     print(prompt)
     Option(System.console()) match {
       case Some(c) => c.readLine()
-      case None    => new BufferedReader(new InputStreamReader(System.in)).readLine()
+      case None => new BufferedReader(new InputStreamReader(System.in)).readLine()
     }
   }
 
@@ -122,54 +130,65 @@ object Main extends IOApp {
     print(prompt)
     Option(System.console()) match {
       case Some(c) => new String(c.readPassword())
-      case None    => new BufferedReader(new InputStreamReader(System.in)).readLine()
+      case None => new BufferedReader(new InputStreamReader(System.in)).readLine()
     }
   }
 
   private def execute(config: Config): IO[Unit] =
     for {
-      plan <- IO.blocking(new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))(using config.system))
-      _    <- if (plan.invalid().isEmpty) proceedToGarmin(config, plan)
-              else {
-                plan.invalid().foreach(i => log.warn(i.toString))
-                println("Your plan contains some invalid items.")
-                print("Do you want to proceed to Garmin by skipping these items? [Y/n]")
-                readLine("").flatMap {
-                  case null | "" | "y" | "Y" => proceedToGarmin(config, plan)
-                  case _                     => IO.unit
-                }
-              }
+      plan <- IO.blocking(
+        new WeeklyPlan(Files.readAllBytes(Paths.get(config.csv)))(using config.system)
+      )
+      _ <-
+        if (plan.invalid().isEmpty) proceedToGarmin(config, plan)
+        else {
+          plan.invalid().foreach(i => log.warn(i.toString))
+          println("Your plan contains some invalid items.")
+          print("Do you want to proceed to Garmin by skipping these items? [Y/n]")
+          readLine("").flatMap {
+            case null | "" | "y" | "Y" => proceedToGarmin(config, plan)
+            case _ => IO.unit
+          }
+        }
     } yield ()
 
   private def proceedToGarmin(config: Config, plan: WeeklyPlan): IO[Unit] =
     for {
-      email    <- if (config.email.nonEmpty) IO.pure(config.email)
-                  else readLine("Please enter your email address to login to Garmin Connect: ")
-      password <- if (config.password.nonEmpty) IO.pure(config.password)
-                  else readPassword("Password: ")
+      email <-
+        if (config.email.nonEmpty) IO.pure(config.email)
+        else readLine("Please enter your email address to login to Garmin Connect: ")
+      password <-
+        if (config.password.nonEmpty) IO.pure(config.password)
+        else readPassword("Password: ")
       _ <- EmberClientBuilder.default[IO].build.use { client =>
-             GarminConnect.make(email, password, client).flatMap { garmin =>
-               syncGarmin(config, plan, garmin)
-             }
-           }
+        GarminConnect.make(email, password, client).flatMap { garmin =>
+          syncGarmin(config, plan, garmin)
+        }
+      }
     } yield ()
 
   private def syncGarmin(config: Config, plan: WeeklyPlan, garmin: GarminConnect): IO[Unit] = {
 
-    def deleteWorkoutsTask(workouts: List[String])(using session: GarminSession): IO[Option[String]] =
+    def deleteWorkoutsTask(
+        workouts: List[String]
+    )(using session: GarminSession): IO[Option[String]] =
       if (config.delete) garmin.deleteWorkouts(workouts).map(c => Some(s"$c deleted"))
       else IO.pure(None)
 
-    def createWorkoutsTask(workouts: List[WorkoutDef])(using session: GarminSession): IO[Option[List[GarminWorkout]]] =
+    def createWorkoutsTask(
+        workouts: List[WorkoutDef]
+    )(using session: GarminSession): IO[Option[List[GarminWorkout]]] =
       if (config.mode.exists(List(Mode.`import`, Mode.schedule).contains(_)))
         garmin.createWorkouts(workouts).map(Some(_))
       else IO.pure(None)
 
-    def scheduleTask(workouts: List[GarminWorkout])(using session: GarminSession): IO[Option[String]] =
+    def scheduleTask(
+        workouts: List[GarminWorkout]
+    )(using session: GarminSession): IO[Option[String]] =
       if (config.mode.contains(Mode.schedule)) {
         val start = (config.start, config.end) match {
           case (_, end) if !end.isEqual(LocalDate.MIN) => end.minusDays(plan.get().length - 1)
-          case (from, _)                               => from
+          case (from, _) => from
         }
         val woMap: Map[String, GarminWorkout] = workouts.map(ga => ga.name -> ga).toMap
         val spec = plan
@@ -184,7 +203,8 @@ object Main extends IOApp {
       } else IO.pure(None)
 
     def transformWorkouts(workouts: List[WorkoutDef]): List[WorkoutDef] =
-      if (config.autoCooldown) workouts.map(w => w.copy(steps = w.steps :+ CooldownStep(LapButtonPressed)))
+      if (config.autoCooldown)
+        workouts.map(w => w.copy(steps = w.steps :+ CooldownStep(LapButtonPressed)))
       else workouts
 
     val workouts = transformWorkouts(plan.workouts.toList)
@@ -193,9 +213,11 @@ object Main extends IOApp {
       case Right(s) =>
         given session: GarminSession = s
         for {
-          maybeDeleteMessage   <- deleteWorkoutsTask(workouts.map(_.name))
-          maybeGarminWorkouts  <- createWorkoutsTask(workouts)
-          maybeScheduleMessage <- scheduleTask(maybeGarminWorkouts.fold(List.empty[GarminWorkout])(identity))
+          maybeDeleteMessage <- deleteWorkoutsTask(workouts.map(_.name))
+          maybeGarminWorkouts <- createWorkoutsTask(workouts)
+          maybeScheduleMessage <- scheduleTask(
+            maybeGarminWorkouts.fold(List.empty[GarminWorkout])(identity)
+          )
         } yield {
           log.info("\nStatistics:")
           maybeDeleteMessage.foreach(msg => log.info("  " + msg))

@@ -28,7 +28,7 @@ class TargetSpec extends AnyFlatSpec with Matchers {
 
     val mpm = Target.parse("4:20-05:30 mpm").asInstanceOf[PaceTarget]
     mpm should be(PaceTarget(Pace(mi, "4:20"), Pace(mi, "05:30")))
-    mpm.from.speed should be(6.189784615384616D)
+    mpm.from.speed should be(6.189784615384616d)
 
     a[IllegalArgumentException] should be thrownBy Target.parse("5:20-04:30 unknownUOM")
   }
@@ -38,11 +38,15 @@ class TargetSpec extends AnyFlatSpec with Matchers {
     hrcTarget should be(HrCustomTarget(130, 150))
     hrcTarget.json should be(
       Json.obj(
-        "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(4), "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")),
+        "targetType" -> Json.obj(
+          "workoutTargetTypeId" -> Json.fromInt(4),
+          "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")
+        ),
         "targetValueOne" -> Json.fromInt(130),
         "targetValueTwo" -> Json.fromInt(150),
-        "zoneNumber"     -> Json.Null
-      ))
+        "zoneNumber" -> Json.Null
+      )
+    )
   }
 
   "Target" should "handle custom POWER specification correctly" in {
@@ -50,11 +54,15 @@ class TargetSpec extends AnyFlatSpec with Matchers {
     powTarget should be(PowerCustomTarget(230, 250))
     powTarget.json should be(
       Json.obj(
-        "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(2), "workoutTargetTypeKey" -> Json.fromString("power.zone")),
+        "targetType" -> Json.obj(
+          "workoutTargetTypeId" -> Json.fromInt(2),
+          "workoutTargetTypeKey" -> Json.fromString("power.zone")
+        ),
         "targetValueOne" -> Json.fromInt(230),
         "targetValueTwo" -> Json.fromInt(250),
-        "zoneNumber"     -> Json.Null
-      ))
+        "zoneNumber" -> Json.Null
+      )
+    )
   }
 
   "Target" should "handle custom CADENCE specification correctly" in {
@@ -62,10 +70,14 @@ class TargetSpec extends AnyFlatSpec with Matchers {
     cadenceTarget should be(CadenceCustomTarget(80, 90))
     cadenceTarget.json should be(
       Json.obj(
-        "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(3), "workoutTargetTypeKey" -> Json.fromString("cadence.zone")),
+        "targetType" -> Json.obj(
+          "workoutTargetTypeId" -> Json.fromInt(3),
+          "workoutTargetTypeKey" -> Json.fromString("cadence.zone")
+        ),
         "targetValueOne" -> Json.fromInt(80),
         "targetValueTwo" -> Json.fromInt(90),
-        "zoneNumber"     -> Json.Null
-      ))
+        "zoneNumber" -> Json.Null
+      )
+    )
   }
 }

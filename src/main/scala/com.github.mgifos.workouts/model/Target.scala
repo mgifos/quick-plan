@@ -9,70 +9,91 @@ sealed trait Target {
 case class HrZoneTarget(zone: Int) extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(4), "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(4),
+        "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")
+      ),
       "targetValueOne" -> Json.fromString(""),
       "targetValueTwo" -> Json.fromString(""),
-      "zoneNumber"     -> Json.fromString(zone.toString)
+      "zoneNumber" -> Json.fromString(zone.toString)
     )
 }
 
 case class HrCustomTarget(from: Int, to: Int) extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(4), "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(4),
+        "workoutTargetTypeKey" -> Json.fromString("heart.rate.zone")
+      ),
       "targetValueOne" -> Json.fromInt(from),
       "targetValueTwo" -> Json.fromInt(to),
-      "zoneNumber"     -> Json.Null
+      "zoneNumber" -> Json.Null
     )
 }
 
 case class PaceTarget(from: Pace, to: Pace) extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(6), "workoutTargetTypeKey" -> Json.fromString("pace.zone")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(6),
+        "workoutTargetTypeKey" -> Json.fromString("pace.zone")
+      ),
       "targetValueOne" -> Json.fromDoubleOrNull(from.speed),
       "targetValueTwo" -> Json.fromDoubleOrNull(to.speed),
-      "zoneNumber"     -> Json.Null
+      "zoneNumber" -> Json.Null
     )
 }
 
 case class PowerCustomTarget(from: Int, to: Int) extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(2), "workoutTargetTypeKey" -> Json.fromString("power.zone")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(2),
+        "workoutTargetTypeKey" -> Json.fromString("power.zone")
+      ),
       "targetValueOne" -> Json.fromInt(from),
       "targetValueTwo" -> Json.fromInt(to),
-      "zoneNumber"     -> Json.Null
+      "zoneNumber" -> Json.Null
     )
 }
 
 case class CadenceCustomTarget(from: Int, to: Int) extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(3), "workoutTargetTypeKey" -> Json.fromString("cadence.zone")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(3),
+        "workoutTargetTypeKey" -> Json.fromString("cadence.zone")
+      ),
       "targetValueOne" -> Json.fromInt(from),
       "targetValueTwo" -> Json.fromInt(to),
-      "zoneNumber"     -> Json.Null
+      "zoneNumber" -> Json.Null
     )
 }
 
 case class SpeedTarget(from: Speed, to: Speed) extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(5), "workoutTargetTypeKey" -> Json.fromString("speed.zone")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(5),
+        "workoutTargetTypeKey" -> Json.fromString("speed.zone")
+      ),
       "targetValueOne" -> Json.fromDoubleOrNull(from.speed),
       "targetValueTwo" -> Json.fromDoubleOrNull(to.speed),
-      "zoneNumber"     -> Json.Null
+      "zoneNumber" -> Json.Null
     )
 }
 
 object NoTarget extends Target {
   override def json: Json =
     Json.obj(
-      "targetType"     -> Json.obj("workoutTargetTypeId" -> Json.fromInt(1), "workoutTargetTypeKey" -> Json.fromString("no.target")),
+      "targetType" -> Json.obj(
+        "workoutTargetTypeId" -> Json.fromInt(1),
+        "workoutTargetTypeKey" -> Json.fromString("no.target")
+      ),
       "targetValueOne" -> Json.Null,
       "targetValueTwo" -> Json.Null,
-      "zoneNumber"     -> Json.Null
+      "zoneNumber" -> Json.Null
     )
 }
 
@@ -81,16 +102,18 @@ case class Pace(uom: DistanceUnit, exp: String) {
   def seconds: Int = exp.trim.split(":").last.toInt
 
   /**
-    * @return Speed in m/s
-    */
+   * @return
+   *   Speed in m/s
+   */
   def speed: Double = uom.toMeters(1) / (minutes * 60 + seconds)
 }
 
 case class Speed(unit: DistanceUnit, exp: String) {
 
   /**
-    * @return Speed in m/s
-    */
+   * @return
+   *   Speed in m/s
+   */
   def speed: Double = unit.toMeters(exp.toDouble) / 3600
 }
 
@@ -104,9 +127,9 @@ object Target {
 
   def parse(x: String)(using msys: MeasurementSystem): Target = x.trim match {
     case CadenceCustomRx(from, to) => CadenceCustomTarget(from.toInt, to.toInt)
-    case HrZoneRx(zone)            => HrZoneTarget(zone.toInt)
-    case HrCustomRx(from, to)      => HrCustomTarget(from.toInt, to.toInt)
-    case PowerCustomRx(from, to)   => PowerCustomTarget(from.toInt, to.toInt)
+    case HrZoneRx(zone) => HrZoneTarget(zone.toInt)
+    case HrCustomRx(from, to) => HrCustomTarget(from.toInt, to.toInt)
+    case PowerCustomRx(from, to) => PowerCustomTarget(from.toInt, to.toInt)
     case SpeedRangeRx(from, _, to, _, uom) =>
       val du = Option(uom).fold(msys.distance)(DistanceUnit.withSpeedUOM)
       SpeedTarget(Speed(du, from), Speed(du, to))

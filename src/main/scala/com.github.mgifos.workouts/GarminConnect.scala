@@ -8,13 +8,13 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-import cats.effect.{IO, Ref}
+import cats.effect.{ IO, Ref }
 import cats.effect.std.Mutex
 import cats.syntax.traverse._
 import com.github.mgifos.workouts.model.WorkoutDef
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import io.circe.parser.{parse => parseJson}
+import io.circe.parser.{ parse => parseJson }
 import org.http4s._
 import org.http4s.client.Client
 import org.typelevel.ci.CIString
@@ -26,16 +26,18 @@ case class GarminWorkout(name: String, id: Long)
 case class GarminSession(accessToken: String)
 
 class GarminConnect(
-    email: String,
-    password: String,
-    client: Client[IO],
-    sessionRef: Ref[IO, Option[GarminSession]],
-    loginMutex: Mutex[IO]
+  email: String,
+  password: String,
+  client: Client[IO],
+  sessionRef: Ref[IO, Option[GarminSession]],
+  loginMutex: Mutex[IO]
 ) {
 
   private val log = Logger(getClass)
 
-  def createWorkouts(workouts: List[WorkoutDef])(using session: GarminSession): IO[List[GarminWorkout]] = {
+  def createWorkouts(
+      workouts: List[WorkoutDef]
+  )(using session: GarminSession): IO[List[GarminWorkout]] = {
     log.info("\nCreating workouts:")
     Stream
       .emits(workouts)
@@ -72,34 +74,33 @@ class GarminConnect(
   def deleteWorkouts(workouts: List[String])(using session: GarminSession): IO[Int] =
     for {
       wsMap <- getWorkoutsMap()
-      _     <- IO(log.info("\nDeleting workouts:"))
+      _ <- IO(log.info("\nDeleting workouts:"))
       reqs: List[(String, List[Request[IO]])] = for {
-               workout <- workouts
-               ids = wsMap.getOrElse(workout, List.empty[Long])
-               if ids.nonEmpty
-             } yield {
-               val label = s"$workout -> ${ids.mkString("[", ", ", "]")}"
-               label -> ids.map { id =>
-                 Request[IO](
-                   method = Method.DELETE,
-                   uri = Uri.unsafeFromString(s"https://connectapi.garmin.com/workout-service/workout/$id")
-                 ).withHeaders(sessionHeaders(session))
-               }
-             }
+        workout <- workouts
+        ids = wsMap.getOrElse(workout, List.empty[Long])
+        if ids.nonEmpty
+      } yield {
+        val label = s"$workout -> ${ids.mkString("[", ", ", "]")}"
+        label -> ids.map { id =>
+          Request[IO](
+            method = Method.DELETE,
+            uri = Uri.unsafeFromString(s"https://connectapi.garmin.com/workout-service/workout/$id")
+          ).withHeaders(sessionHeaders(session))
+        }
+      }
       count <- Stream
-                 .emits(reqs)
-                 .metered[IO](1.second)
-                 .evalMap { case (label, perIdReqs) =>
-                   perIdReqs
-                     .traverse(req => client.run(req).use(resp => IO.pure(resp.status)))
-                     .map { statuses =>
-                       if (statuses.forall(_ == Status.NoContent)) log.info(s"  $label")
-                       else log.error(s"  Cannot delete workout: $label")
-                     }
-                 }
-                 .compile
-                 .toList
-                 .map(_.length)
+        .emits(reqs)
+        .metered[IO](1.second)
+        .evalMap { case (label, perIdReqs) =>
+          perIdReqs.traverse(req => client.run(req).use(resp => IO.pure(resp.status))).map {
+            statuses =>
+              if (statuses.forall(_ == Status.NoContent)) log.info(s"  $label")
+              else log.error(s"  Cannot delete workout: $label")
+          }
+        }
+        .compile
+        .toList
+        .map(_.length)
     } yield count
 
   def schedule(spec: List[(LocalDate, GarminWorkout)])(using session: GarminSession): IO[Int] = {
@@ -110,10 +111,11 @@ class GarminConnect(
       .metered[IO](1.second)
       .evalMap { case (date, gw) =>
         val label = s"$date -> ${gw.name}"
-        val body  = io.circe.Json.obj("date" -> io.circe.Json.fromString(date.toString))
+        val body = io.circe.Json.obj("date" -> io.circe.Json.fromString(date.toString))
         val req = Request[IO](
           method = Method.POST,
-          uri = Uri.unsafeFromString(s"https://connectapi.garmin.com/workout-service/schedule/${gw.id}")
+          uri =
+            Uri.unsafeFromString(s"https://connectapi.garmin.com/workout-service/schedule/${gw.id}")
         ).withEntity(body.noSpaces)
           .withHeaders(
             sessionHeaders(session)
@@ -148,7 +150,7 @@ class GarminConnect(
             .flatMap { obj =>
               for {
                 name <- obj.hcursor.get[String]("workoutName").toOption
-                id   <- obj.hcursor.get[Long]("workoutId").toOption
+                id <- obj.hcursor.get[Long]("workoutId").toOption
               } yield name -> id
             }
             .groupBy(_._1)
@@ -166,20 +168,22 @@ class GarminConnect(
       sessionRef.get.flatMap {
         case Some(s) if !forceNewSession => IO.pure(Right(s))
         case _ =>
-          performLogin
-            .flatMap { session =>
-              val valid = session.accessToken.nonEmpty
-              if (valid)
-                sessionRef.set(Some(session)) *>
-                  IO(log.info("Successfully logged in to Garmin Connect!")) *>
-                  IO.pure(Right(session): Either[String, GarminSession])
-              else
-                IO.pure(Left("Login was not successful, check your username and password and try again."))
-            }
-            .handleError { ex =>
-              log.error(s"Login error: ${ex.getMessage}")
-              Left("Attempt to log in to Garmin Connect was not successful (this could be a server error).")
-            }
+          performLogin.flatMap { session =>
+            val valid = session.accessToken.nonEmpty
+            if (valid)
+              sessionRef.set(Some(session)) *>
+                IO(log.info("Successfully logged in to Garmin Connect!")) *>
+                IO.pure(Right(session): Either[String, GarminSession])
+            else
+              IO.pure(
+                Left("Login was not successful, check your username and password and try again.")
+              )
+          }.handleError { ex =>
+            log.error(s"Login error: ${ex.getMessage}")
+            Left(
+              "Attempt to log in to Garmin Connect was not successful (this could be a server error)."
+            )
+          }
       }
     }
 
@@ -197,20 +201,17 @@ class GarminConnect(
       extraParams: Map[String, String] = Map.empty
   ): String = {
     def pct(s: String): String =
-      URLEncoder.encode(s, "UTF-8")
-        .replace("+", "%20")
-        .replace("*", "%2A")
-        .replace("%7E", "~")
+      URLEncoder.encode(s, "UTF-8").replace("+", "%20").replace("*", "%2A").replace("%7E", "~")
 
-    val nonce     = UUID.randomUUID().toString.replace("-", "")
+    val nonce = UUID.randomUUID().toString.replace("-", "")
     val timestamp = (System.currentTimeMillis() / 1000).toString
 
     val oauthParams: Map[String, String] = Map(
-      "oauth_consumer_key"     -> consumerKey,
-      "oauth_nonce"            -> nonce,
+      "oauth_consumer_key" -> consumerKey,
+      "oauth_nonce" -> nonce,
       "oauth_signature_method" -> "HMAC-SHA1",
-      "oauth_timestamp"        -> timestamp,
-      "oauth_version"          -> "1.0"
+      "oauth_timestamp" -> timestamp,
+      "oauth_version" -> "1.0"
     ) ++ (if (tokenKey.nonEmpty) Map("oauth_token" -> tokenKey) else Map.empty)
 
     val paramString = (oauthParams ++ extraParams).toSeq
@@ -218,7 +219,7 @@ class GarminConnect(
       .map { case (k, v) => s"${pct(k)}=${pct(v)}" }
       .mkString("&")
 
-    val base       = s"${method.toUpperCase}&${pct(url)}&${pct(paramString)}"
+    val base = s"${method.toUpperCase}&${pct(url)}&${pct(paramString)}"
     val signingKey = s"${pct(consumerSecret)}&${pct(tokenSecret)}"
 
     val mac = Mac.getInstance("HmacSHA1")
@@ -237,13 +238,13 @@ class GarminConnect(
 
   private def performLogin: IO[GarminSession] = {
 
-    val CSRF_RE   = """name="_csrf"\s+value="(.+?)"""".r
+    val CSRF_RE = """name="_csrf"\s+value="(.+?)"""".r
     val TICKET_RE = """embed\?ticket=([^"]+)"""".r
-    val TITLE_RE  = """<title>(.+?)</title>""".r
+    val TITLE_RE = """<title>(.+?)</title>""".r
 
-    val ssoBase   = "https://sso.garmin.com/sso"
-    val ssoEmbed  = s"$ssoBase/embed"
-    val ssoUA     = "GCM-iOS-5.7.2.1"
+    val ssoBase = "https://sso.garmin.com/sso"
+    val ssoEmbed = s"$ssoBase/embed"
+    val ssoUA = "GCM-iOS-5.7.2.1"
     val androidUA = "com.garmin.android.apps.connectmobile"
 
     def buildQS(params: Map[String, String]): String =
@@ -252,17 +253,17 @@ class GarminConnect(
       }.mkString("&")
 
     val embedParams: Map[String, String] = Map(
-      "id"          -> "gauth-widget",
+      "id" -> "gauth-widget",
       "embedWidget" -> "true",
-      "gauthHost"   -> ssoBase
+      "gauthHost" -> ssoBase
     )
     val signinParams: Map[String, String] = Map(
-      "id"                              -> "gauth-widget",
-      "embedWidget"                     -> "true",
-      "gauthHost"                       -> ssoEmbed,
-      "service"                         -> ssoEmbed,
-      "source"                          -> ssoEmbed,
-      "redirectAfterAccountLoginUrl"    -> ssoEmbed,
+      "id" -> "gauth-widget",
+      "embedWidget" -> "true",
+      "gauthHost" -> ssoEmbed,
+      "service" -> ssoEmbed,
+      "source" -> ssoEmbed,
+      "redirectAfterAccountLoginUrl" -> ssoEmbed,
       "redirectAfterAccountCreationUrl" -> ssoEmbed
     )
 
@@ -302,9 +303,11 @@ class GarminConnect(
             CSRF_RE.findFirstMatchIn(html).map(_.group(1)) match {
               case Some(csrf) => IO.pure((csrf, newJar))
               case None =>
-                IO.raiseError(new RuntimeException(
-                  s"Cannot find CSRF token in SSO signin page. Check account or try again later. HTML: ${html.take(400)}"
-                ))
+                IO.raiseError(
+                  new RuntimeException(
+                    s"Cannot find CSRF token in SSO signin page. Check account or try again later. HTML: ${html.take(400)}"
+                  )
+                )
             }
           }
         }
@@ -313,7 +316,9 @@ class GarminConnect(
     // Step 3: POST /sso/signin — submit credentials, extract ticket from HTML
     def step3(csrf: String, jar: Map[String, String]): IO[String] = {
       val signinUrl = s"$ssoBase/signin?${buildQS(signinParams)}"
-      val formBody  = buildQS(Map("username" -> email, "password" -> password, "embed" -> "true", "_csrf" -> csrf))
+      val formBody = buildQS(
+        Map("username" -> email, "password" -> password, "embed" -> "true", "_csrf" -> csrf)
+      )
       client
         .run(
           Request[IO](
@@ -333,17 +338,31 @@ class GarminConnect(
               case Some(ticket) => IO.pure(ticket)
               case None =>
                 if (resp.status.code == 429)
-                  IO.raiseError(new RuntimeException("Rate limited by Garmin SSO (429). Please wait a few minutes and try again."))
+                  IO.raiseError(
+                    new RuntimeException(
+                      "Rate limited by Garmin SSO (429). Please wait a few minutes and try again."
+                    )
+                  )
                 else if (html.contains("ACCOUNT_LOCKED"))
-                  IO.raiseError(new RuntimeException("Garmin account is locked. Too many failed login attempts. Unlock it at connect.garmin.com and try again."))
+                  IO.raiseError(
+                    new RuntimeException(
+                      "Garmin account is locked. Too many failed login attempts. Unlock it at connect.garmin.com and try again."
+                    )
+                  )
                 else {
                   val title = TITLE_RE.findFirstMatchIn(html).map(_.group(1)).getOrElse("unknown")
                   if (title.contains("MFA"))
-                    IO.raiseError(new RuntimeException("MFA is required but not supported. Disable 2FA on your Garmin account."))
+                    IO.raiseError(
+                      new RuntimeException(
+                        "MFA is required but not supported. Disable 2FA on your Garmin account."
+                      )
+                    )
                   else
-                    IO.raiseError(new RuntimeException(
-                      s"Login failed. Check your email/password. (page title: $title)"
-                    ))
+                    IO.raiseError(
+                      new RuntimeException(
+                        s"Login failed. Check your email/password. (page title: $title)"
+                      )
+                    )
                 }
             }
           }
@@ -352,38 +371,49 @@ class GarminConnect(
 
     // Step 4: Fetch OAuth1 consumer credentials from garth's public S3 bucket
     case class OAuthConsumer(key: String, secret: String)
-    val step4: IO[OAuthConsumer] = client
-      .run(Request[IO](Method.GET, Uri.unsafeFromString("https://thegarth.s3.amazonaws.com/oauth_consumer.json")))
-      .use { resp =>
-        resp.as[String].flatMap { body =>
-          parseJson(body) match {
-            case Right(json) =>
-              (json.hcursor.get[String]("consumer_key"), json.hcursor.get[String]("consumer_secret")) match {
-                case (Right(k), Right(s)) => IO.pure(OAuthConsumer(k, s))
-                case _                   => IO.raiseError(new RuntimeException(s"Cannot parse oauth_consumer.json: $body"))
-              }
-            case Left(e) => IO.raiseError(new RuntimeException(s"Cannot fetch OAuth consumer credentials: $e"))
+    val step4: IO[OAuthConsumer] =
+      client
+        .run(
+          Request[IO](
+            Method.GET,
+            Uri.unsafeFromString("https://thegarth.s3.amazonaws.com/oauth_consumer.json")
+          )
+        )
+        .use { resp =>
+          resp.as[String].flatMap { body =>
+            parseJson(body) match {
+              case Right(json) =>
+                (
+                  json.hcursor.get[String]("consumer_key"),
+                  json.hcursor.get[String]("consumer_secret")
+                ) match {
+                  case (Right(k), Right(s)) => IO.pure(OAuthConsumer(k, s))
+                  case _ =>
+                    IO.raiseError(new RuntimeException(s"Cannot parse oauth_consumer.json: $body"))
+                }
+              case Left(e) =>
+                IO.raiseError(new RuntimeException(s"Cannot fetch OAuth consumer credentials: $e"))
+            }
           }
         }
-      }
 
     // Step 5: OAuth1-signed GET → exchange ticket for OAuth1 token
     val preauthorizedUrl = "https://connectapi.garmin.com/oauth-service/oauth/preauthorized"
 
     def step5(ticket: String, consumer: OAuthConsumer): IO[(String, String)] = {
       val queryParams = Map(
-        "ticket"             -> ticket,
-        "login-url"          -> ssoEmbed,
+        "ticket" -> ticket,
+        "login-url" -> ssoEmbed,
         "accepts-mfa-tokens" -> "true"
       )
       val authHeader = oauth1Header(
-        method         = "GET",
-        url            = preauthorizedUrl,
-        consumerKey    = consumer.key,
+        method = "GET",
+        url = preauthorizedUrl,
+        consumerKey = consumer.key,
         consumerSecret = consumer.secret,
-        tokenKey       = "",
-        tokenSecret    = "",
-        extraParams    = queryParams
+        tokenKey = "",
+        tokenSecret = "",
+        extraParams = queryParams
       )
       client
         .run(
@@ -397,15 +427,21 @@ class GarminConnect(
         )
         .use { resp =>
           resp.as[String].flatMap { body =>
-            val params = body.split("&").flatMap { pair =>
-              pair.split("=", 2) match {
-                case Array(k, v) => Some(k -> URLDecoder.decode(v, "UTF-8"))
-                case _           => None
+            val params = body
+              .split("&")
+              .flatMap { pair =>
+                pair.split("=", 2) match {
+                  case Array(k, v) => Some(k -> URLDecoder.decode(v, "UTF-8"))
+                  case _ => None
+                }
               }
-            }.toMap
+              .toMap
             (params.get("oauth_token"), params.get("oauth_token_secret")) match {
               case (Some(t), Some(s)) => IO.pure((t, s))
-              case _ => IO.raiseError(new RuntimeException(s"Cannot parse OAuth1 token response. Body: $body"))
+              case _ =>
+                IO.raiseError(
+                  new RuntimeException(s"Cannot parse OAuth1 token response. Body: $body")
+                )
             }
           }
         }
@@ -414,44 +450,50 @@ class GarminConnect(
     // Step 6: OAuth1-signed POST → exchange OAuth1 for OAuth2 Bearer (empty body)
     val exchangeUrl = "https://connectapi.garmin.com/oauth-service/oauth/exchange/user/2.0"
 
-    def step6(oauth1Token: String, oauth1Secret: String, consumer: OAuthConsumer): IO[GarminSession] = {
+    def step6(
+        oauth1Token: String,
+        oauth1Secret: String,
+        consumer: OAuthConsumer
+    ): IO[GarminSession] = {
       val authHeader = oauth1Header(
-        method         = "POST",
-        url            = exchangeUrl,
-        consumerKey    = consumer.key,
+        method = "POST",
+        url = exchangeUrl,
+        consumerKey = consumer.key,
         consumerSecret = consumer.secret,
-        tokenKey       = oauth1Token,
-        tokenSecret    = oauth1Secret,
-        extraParams    = Map.empty
+        tokenKey = oauth1Token,
+        tokenSecret = oauth1Secret,
+        extraParams = Map.empty
       )
       client
         .run(
-          Request[IO](Method.POST, Uri.unsafeFromString(exchangeUrl))
-            .withHeaders(
-              Header.Raw(CIString("Content-Type"), "application/x-www-form-urlencoded"),
-              Header.Raw(CIString("Authorization"), authHeader),
-              Header.Raw(CIString("User-Agent"), androidUA)
-            )
+          Request[IO](Method.POST, Uri.unsafeFromString(exchangeUrl)).withHeaders(
+            Header.Raw(CIString("Content-Type"), "application/x-www-form-urlencoded"),
+            Header.Raw(CIString("Authorization"), authHeader),
+            Header.Raw(CIString("User-Agent"), androidUA)
+          )
         )
         .use { resp =>
           resp.as[String].flatMap { body =>
             parseJson(body).flatMap(_.hcursor.get[String]("access_token")) match {
               case Right(token) => IO.pure(GarminSession(token))
-              case Left(e)      => IO.raiseError(new RuntimeException(s"Cannot parse OAuth2 token response: $e. Body: $body"))
+              case Left(e) =>
+                IO.raiseError(
+                  new RuntimeException(s"Cannot parse OAuth2 token response: $e. Body: $body")
+                )
             }
           }
         }
     }
 
     for {
-      jar          <- step1
-      csrfAndJar   <- step2(jar)
-      (csrf, jar2) =  csrfAndJar
-      ticket       <- step3(csrf, jar2)
-      consumer     <- step4
-      oauth1Pair   <- step5(ticket, consumer)
-      (tok, sec)   =  oauth1Pair
-      session      <- step6(tok, sec, consumer)
+      jar <- step1
+      csrfAndJar <- step2(jar)
+      (csrf, jar2) = csrfAndJar
+      ticket <- step3(csrf, jar2)
+      consumer <- step4
+      oauth1Pair <- step5(ticket, consumer)
+      (tok, sec) = oauth1Pair
+      session <- step6(tok, sec, consumer)
     } yield session
   }
 
@@ -465,7 +507,7 @@ class GarminConnect(
 object GarminConnect {
   def make(email: String, password: String, client: Client[IO]): IO[GarminConnect] =
     for {
-      ref   <- Ref.of[IO, Option[GarminSession]](None)
+      ref <- Ref.of[IO, Option[GarminSession]](None)
       mutex <- Mutex[IO]
     } yield new GarminConnect(email, password, client, ref, mutex)
 }

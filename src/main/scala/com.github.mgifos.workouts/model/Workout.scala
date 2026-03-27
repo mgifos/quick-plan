@@ -13,24 +13,33 @@ case class WorkoutDef(sport: String, name: String, steps: Seq[Step] = Nil) exten
   def withStep(step: Step): WorkoutDef = WorkoutDef(sport, name, steps :+ step)
   override def json(): Json =
     Json.obj(
-      "sportType" -> Json.obj("sportTypeId" -> Json.fromInt(sportId(sport)), "sportTypeKey" -> Json.fromString(sportTypeKey(sport))),
+      "sportType" -> Json.obj(
+        "sportTypeId" -> Json.fromInt(sportId(sport)),
+        "sportTypeKey" -> Json.fromString(sportTypeKey(sport))
+      ),
       "workoutName" -> Json.fromString(name),
       "workoutSegments" -> Json.arr(
         Json.obj(
           "segmentOrder" -> Json.fromInt(1),
-          "sportType"    -> Json.obj("sportTypeId" -> Json.fromInt(sportId(sport)), "sportTypeKey" -> Json.fromString(sport)),
+          "sportType" -> Json.obj(
+            "sportTypeId" -> Json.fromInt(sportId(sport)),
+            "sportTypeKey" -> Json.fromString(sport)
+          ),
           "workoutSteps" -> Json.fromValues(steps.zipWithIndex.map { case (s, i) => s.json(i + 1) })
-        ))
+        )
+      )
     )
 }
 
 case class WorkoutDefFailure(`type`: String, original: String, cause: String) extends Workout {
-  override def toString = s"""Possible workout definition that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
+  override def toString =
+    s"""Possible workout definition that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
   override def valid(): Boolean = false
 }
 
 case class WorkoutStepFailure(original: String, cause: String) extends Workout {
-  override def toString = s"""Workout steps that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
+  override def toString =
+    s"""Workout steps that can't be parsed: "$original"\nCause: "$cause"\n-------------------------------------"""
   override def valid(): Boolean = false
 }
 
@@ -41,7 +50,8 @@ case class WorkoutNote(note: String) extends Workout
 object Workout {
 
   private val WorkoutType = "(running|cycling|custom)"
-  private val WorkoutHeader = raw"""^$WorkoutType?:\s*([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$$""".r
+  private val WorkoutHeader =
+    raw"""^$WorkoutType?:\s*([\u0020-\u007F]+)(([\r\n]+\s*\-\s[a-z]+:.*)*)$$""".r
   private val NextStepRx = """^((-\s\w*:\s.*)(([\r\n]+\s{1,}-\s.*)*))(([\s].*)*)$""".r
   private val PossibleWorkoutHeader = raw"""^\s*$WorkoutType?\s*:\s*.*(([\r\n]+\s*.*)*)$$""".r
 
@@ -58,28 +68,33 @@ object Workout {
       case _ => WorkoutStepFailure(text, steps.trim)
     }
     text match {
-      case WorkoutHeader(null, name, steps, _)  => loop(WorkoutDef(detectSport(steps), name), steps.trim)
+      case WorkoutHeader(null, name, steps, _) =>
+        loop(WorkoutDef(detectSport(steps), name), steps.trim)
       case WorkoutHeader(sport, name, steps, _) => loop(WorkoutDef(sport, name), steps.trim)
-      case PossibleWorkoutHeader(t, _, cause)   => WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
-      case _                                    => WorkoutNote(text)
+      case PossibleWorkoutHeader(t, _, cause) =>
+        WorkoutDefFailure(`type` = t, text, if (cause == null) "" else cause.trim)
+      case _ => WorkoutNote(text)
     }
   }
 
   def detectSport(steps: String): String = steps match {
-    case x if x.contains("- run")  => "running"
+    case x if x.contains("- run") => "running"
     case x if x.contains("- bike") => "cycling"
-    case _                         => "custom"
+    case _ => "custom"
   }
 
   def sportId(sport: String) = sport match {
     case "running" => 1
     case "cycling" => 2
-    case "custom"  => 3
-    case _         => throw new IllegalArgumentException("Only running, cycling and 'custom' workouts are supported.")
+    case "custom" => 3
+    case _ =>
+      throw new IllegalArgumentException(
+        "Only running, cycling and 'custom' workouts are supported."
+      )
   }
 
   def sportTypeKey(sport: String) = sport match {
     case "custom" => "other"
-    case _        => sport
+    case _ => sport
   }
 }
